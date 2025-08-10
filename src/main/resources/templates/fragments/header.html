@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:fragment="head">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Service Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary" th:fragment="nav">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-hands-helping"></i> ServiceMatch
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item" th:if="${#authorization.expression('isAuthenticated()') == false}">
+                    <a class="nav-link" th:href="@{/login}">Login</a>
+                </li>
+                <li class="nav-item" th:if="${#authorization.expression('isAuthenticated()') == false}">
+                    <a class="nav-link" th:href="@{/register/client}">Register as Client</a>
+                </li>
+                <li class="nav-item" th:if="${#authorization.expression('isAuthenticated()') == false}">
+                    <a class="nav-link" th:href="@{/register/professional}">Register as Professional</a>
+                </li>
+                
+                <!-- Authenticated User Menu -->
+                <li class="nav-item dropdown" th:if="${#authorization.expression('isAuthenticated()')}">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user"></i> 
+                        <span th:text="${#authentication.name}">User</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li th:if="${#authorization.expression('hasRole(''CLIENT'')')}">
+                            <a class="dropdown-item" th:href="@{/client/dashboard}">
+                                <i class="fas fa-tachometer-alt"></i> Client Dashboard
+                            </a>
+                        </li>
+                        <li th:if="${#authorization.expression('hasRole(''PROFESSIONAL'')')}">
+                            <a class="dropdown-item" th:href="@{/professional/dashboard}">
+                                <i class="fas fa-tachometer-alt"></i> Professional Dashboard
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+						    <a class="dropdown-item" th:href="@{/logout}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+						        <i class="fas fa-sign-out-alt"></i> Logout
+						    </a>
+						    <form id="logout-form" th:action="@{/logout}" method="post" class="d-none">
+						        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+						    </form>
+						</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Flash Messages -->
+<div class="container mt-3" th:if="${message}">
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+
+<div class="container mt-3" th:if="${error}">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+
+<!-- Footer Fragment -->
+<th:block th:fragment="footer">
+    <footer class="bg-dark text-white mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5><i class="fas fa-hands-helping"></i> ServiceMatch</h5>
+                    <p class="text-muted">
+                        Connecting clients with trusted professionals for all your service needs.
+                    </p>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <h6>For Clients</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted text-decoration-none">Browse Professionals</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">How It Works</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Safety Tips</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <h6>For Professionals</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted text-decoration-none">Join as Pro</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Resources</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Success Stories</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6>Connect With Us</h6>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-white"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-linkedin fa-lg"></i></a>
+                    </div>
+                    <div class="mt-3">
+                        <p class="mb-1"><i class="fas fa-envelope"></i> rappzerraz147@gmail.com</p>
+                        <p class="mb-0"><i class="fas fa-phone"></i> +91 4567892147</p>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-0">&copy; 2025 ServiceMatch. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a href="#" class="text-muted text-decoration-none me-3">Privacy Policy</a>
+                    <a href="#" class="text-muted text-decoration-none me-3">Terms of Service</a>
+                    <a href="#" class="text-muted text-decoration-none">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:if="${@environment.acceptsProfiles('dev')}" th:inline="javascript">
+        /*<![CDATA[*/
+        console.log("Development mode active");
+        /*]]>*/
+    </script>
+</th:block>
+</body>
+</html>

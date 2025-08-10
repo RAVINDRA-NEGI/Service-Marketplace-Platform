@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: Service-Marketplace-Platform
+  datasource:
+    url: jdbc:mysql://localhost:3306/service_marketplace_platform
+    username: root
+    password: chutiya22
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+     ddl-auto: update
+    properties:
+      hibernate:
+       dialect: org.hibernate.dialect.MySQL8Dialect 
