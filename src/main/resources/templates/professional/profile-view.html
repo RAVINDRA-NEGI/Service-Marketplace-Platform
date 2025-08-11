@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: head}"></head>
+<body>
+<div th:replace="~{fragments/header :: nav}"></div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a th:href="@{/professional/dashboard}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a th:href="@{/professional/profile}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-user"></i> My Profile
+                </a>
+                <a th:href="@{/professional/profile/edit}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+                <a th:href="@{/professional/availability}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar"></i> Availability
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-user-circle"></i> My Professional Profile</h4>
+                    <a th:href="@{/professional/profile/edit}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <img th:if="${profile.profilePhotoUrl}" 
+                                 th:src="${profile.profilePhotoUrl}" 
+                                 class="img-fluid rounded-circle mb-3" 
+                                 style="width: 150px; height: 150px; object-fit: cover;"
+                                 alt="Profile Photo">
+                            <div th:if="${!profile.profilePhotoUrl}" class="bg-light rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                                <i class="fas fa-user fa-3x text-muted"></i>
+                            </div>
+                            <h5 th:text="${profile.user.fullName}"></h5>
+                            <p class="text-muted" th:text="${'@' + profile.user.username}"></p>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Category:</strong></div>
+                                <div class="col-sm-8" th:text="${profile.category.name}"></div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Hourly Rate:</strong></div>
+                                <div class="col-sm-8">
+                                    <span th:if="${profile.hourlyRate}" th:text="${'$' + #numbers.formatDecimal(profile.hourlyRate, 1, 2)}"></span>
+                                    <span th:if="${!profile.hourlyRate}">Not specified</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Service Area:</strong></div>
+                                <div class="col-sm-8" th:text="${profile.serviceAreaCity + ', ' + profile.serviceAreaState}"></div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Rating:</strong></div>
+                                <div class="col-sm-8">
+                                    <span th:if="${profile.averageRating > 0}" th:text="${#numbers.formatDecimal(profile.averageRating, 1, 1) + '/5 (' + profile.totalReviews + ' reviews)'}"></span>
+                                    <span th:if="${profile.averageRating == 0}">No reviews yet</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Certifications:</strong></div>
+                                <div class="col-sm-8">
+                                    <span th:if="${profile.certification}" th:text="${profile.certification}"></span>
+                                    <span th:if="${!profile.certification}">None listed</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-sm-4"><strong>Bio:</strong></div>
+                                <div class="col-sm-8">
+                                    <p class="mb-0" th:text="${profile.bio}"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/header :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
