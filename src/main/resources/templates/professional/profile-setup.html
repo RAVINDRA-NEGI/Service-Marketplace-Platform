@@ -36,7 +36,7 @@
                                 <div th:if="${#fields.hasErrors('categoryId')}" class="text-danger" th:errors="*{categoryId}"></div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="hourlyRate" class="form-label">Hourly Rate ($)</label>
+                                <label for="hourlyRate" class="form-label">Hourly Rate (Rupee)</label>
                                 <input type="number" class="form-control" th:field="*{hourlyRate}" step="0.01" min="0">
                                 <div th:if="${#fields.hasErrors('hourlyRate')}" class="text-danger" th:errors="*{hourlyRate}"></div>
                             </div>

@@ -28,31 +28,39 @@
                 <div class="card-header">
                     <h4><i class="fas fa-tachometer-alt"></i> Professional Dashboard</h4>
                 </div>
-                <div class="card-body">
-                    <h5>Welcome, <span th:text="${#authentication.name}">Professional</span>!</h5>
-                    <p>Manage your services, availability, and bookings.</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-6 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-user-edit fa-2x text-primary mb-2"></i>
-                                    <h6>Profile Setup</h6>
-                                    <a th:href="@{/professional/profile}" class="btn btn-outline-primary btn-sm">Edit Profile</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
-                                    <h6>Set Availability</h6>
-                                    <a th:href="@{/professional/availability}" class="btn btn-outline-success btn-sm">Manage Slots</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- In professional/dashboard.html, update the welcome section -->
+				<div class="card-body">
+				    <h5>Welcome, <span th:text="${#authentication.name}">Professional</span>!</h5>
+				    
+				    <div th:if="${!hasProfile}" class="alert alert-warning">
+				        <h6><i class="fas fa-exclamation-circle"></i> Complete Your Profile</h6>
+				        <p>You need to set up your professional profile to start receiving bookings.</p>
+				        <a th:href="@{/professional/profile/setup}" class="btn btn-primary btn-sm">Create Profile Now</a>
+				    </div>
+				    
+				    <p th:if="${hasProfile}">Manage your services, availability, and bookings.</p>
+				    
+				    <div class="row mt-4">
+				        <div class="col-md-6 mb-3">
+				            <div class="card">
+				                <div class="card-body text-center">
+				                    <i class="fas fa-user-edit fa-2x text-primary mb-2"></i>
+				                    <h6>Profile Setup</h6>
+				                    <a th:href="@{/professional/profile/setup}" class="btn btn-outline-primary btn-sm">Edit Profile</a>
+				                </div>
+				            </div>
+				        </div>
+				        <div class="col-md-6 mb-3">
+				            <div class="card">
+				                <div class="card-body text-center">
+				                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
+				                    <h6>Set Availability</h6>
+				                    <a th:href="@{/professional/availability}" class="btn btn-outline-success btn-sm">Manage Slots</a>
+				                </div>
+				            </div>
+				        </div>
+				    </div>
+				</div>
             </div>
         </div>
     </div>
