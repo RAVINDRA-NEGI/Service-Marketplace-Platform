@@ -36,16 +36,26 @@
                     
                     <div class="row">
                         <div class="col-md-4 text-center">
-                            <img th:if="${profile.profilePhotoUrl}" 
-                                 th:src="${profile.profilePhotoUrl}" 
-                                 class="img-fluid rounded-circle mb-3" 
-                                 style="width: 150px; height: 150px; object-fit: cover;"
-                                 alt="Profile Photo">
-                            <div th:if="${!profile.profilePhotoUrl}" class="bg-light rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                            <!-- Profile Photo Display -->
+                            <div th:if="${profile.profilePhotoUrl != null and !#strings.isEmpty(profile.profilePhotoUrl)}">
+                                <img th:src="${profile.profilePhotoUrl}" 
+                                     class="img-fluid rounded-circle mb-3" 
+                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                     alt="Profile Photo">
+                            </div>
+                            <div th:if="${profile.profilePhotoUrl == null or #strings.isEmpty(profile.profilePhotoUrl)}" 
+                                 class="bg-light rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                                 style="width: 150px; height: 150px;">
                                 <i class="fas fa-user fa-3x text-muted"></i>
                             </div>
+                            
                             <h5 th:text="${profile.user.fullName}"></h5>
                             <p class="text-muted" th:text="${'@' + profile.user.username}"></p>
+                            
+                            <!-- Photo Update Button -->
+                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#photoModal">
+                                <i class="fas fa-camera"></i> Update Photo
+                            </button>
                         </div>
                         
                         <div class="col-md-8">
@@ -57,8 +67,10 @@
                             <div class="row mb-3">
                                 <div class="col-sm-4"><strong>Hourly Rate:</strong></div>
                                 <div class="col-sm-8">
-                                    <span th:if="${profile.hourlyRate}" th:text="${'$' + #numbers.formatDecimal(profile.hourlyRate, 1, 2)}"></span>
-                                    <span th:if="${!profile.hourlyRate}">Not specified</span>
+                                    <span th:if="${profile.hourlyRate != null and profile.hourlyRate > 0}" 
+                                          th:text="${'₹' + #numbers.formatDecimal(profile.hourlyRate, 1, 2)}"></span>
+                                    <span th:if="${profile.hourlyRate == null or profile.hourlyRate <= 0}" 
+                                          class="text-muted">Not specified</span>
                                 </div>
                             </div>
                             
@@ -70,16 +82,43 @@
                             <div class="row mb-3">
                                 <div class="col-sm-4"><strong>Rating:</strong></div>
                                 <div class="col-sm-8">
-                                    <span th:if="${profile.averageRating > 0}" th:text="${#numbers.formatDecimal(profile.averageRating, 1, 1) + '/5 (' + profile.totalReviews + ' reviews)'}"></span>
-                                    <span th:if="${profile.averageRating == 0}">No reviews yet</span>
+                                    <span th:if="${profile.averageRating != null and profile.averageRating > 0}" 
+                                          th:text="${#numbers.formatDecimal(profile.averageRating, 1, 1) + '/5 (' + profile.totalReviews + ' reviews)'}"></span>
+                                    <span th:if="${profile.averageRating == null or profile.averageRating <= 0}" 
+                                          class="text-muted">No reviews yet</span>
                                 </div>
                             </div>
                             
                             <div class="row mb-3">
                                 <div class="col-sm-4"><strong>Certifications:</strong></div>
                                 <div class="col-sm-8">
-                                    <span th:if="${profile.certification}" th:text="${profile.certification}"></span>
-                                    <span th:if="${!profile.certification}">None listed</span>
+                                    <div th:if="${profile.certificatesUrls != null and !#strings.isEmpty(profile.certificatesUrls)}">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <th:block th:each="url, iterStat : ${T(com.fasterxml.jackson.databind.ObjectMapper).new().readValue(profile.certificatesUrls, T(java.util.List))}">
+                                                <a th:href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
+                                                    <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
+                                                    Certificate [[${iterStat.count}]]
+                                                </a>
+                                            </th:block>
+                                        </div>
+                                    </div>
+                                    <div th:if="${profile.certificatesUrls == null or #strings.isEmpty(profile.certificatesUrls)}">
+                                        <span class="text-muted">No certifications uploaded</span>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#certificatesModal">
+                                            <i class="fas fa-upload"></i> Upload More Certificates
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3" th:if="${profile.certification != null and !#strings.isEmpty(profile.certification)}">
+                                <div class="col-sm-4"><strong>Certification Details:</strong></div>
+                                <div class="col-sm-8">
+                                    <p class="mb-0" th:text="${profile.certification}"></p>
                                 </div>
                             </div>
                             
@@ -97,7 +136,105 @@
     </div>
 </div>
 
+<!-- Profile Photo Upload Modal -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/professional/profile/photo}" method="post" enctype="multipart/form-data">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Profile Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="profilePhotoModal" class="form-label">Choose Photo</label>
+                        <input type="file" class="form-control" id="profilePhotoModal" name="profilePhoto" accept="image/*" required>
+                        <div class="form-text">Upload a JPEG or PNG image (max 5MB)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Photo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Certificates Upload Modal -->
+<div class="modal fade" id="certificatesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/professional/profile/certificates}" method="post" enctype="multipart/form-data">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Certifications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="certificatesModalInput" class="form-label">Choose Certificates</label>
+                        <input type="file" class="form-control" id="certificatesModalInput" name="certificates" accept=".pdf,.jpg,.jpeg,.png" multiple required>
+                        <div class="form-text">Upload PDF, JPEG, or PNG files (max 10MB each)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Certificates</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div th:replace="~{fragments/header :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- File validation script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profilePhotoInput = document.getElementById('profilePhotoModal');
+    const certificatesInput = document.getElementById('certificatesModalInput');
+    
+    // Profile photo validation
+    if (profilePhotoInput) {
+        profilePhotoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Profile photo size cannot exceed 5MB');
+                    this.value = '';
+                    return;
+                }
+                if (!file.type.match(/^image\/(jpeg|png)$/)) {
+                    alert('Only JPEG and PNG images are allowed for profile photo');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    }
+    
+    // Certificates validation
+    if (certificatesInput) {
+        certificatesInput.addEventListener('change', function() {
+            const files = Array.from(this.files);
+            for (let file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(`Certificate file "${file.name}" size cannot exceed 10MB`);
+                    this.value = '';
+                    return;
+                }
+                if (!file.type.match(/^(application\/pdf|image\/(jpeg|png))$/)) {
+                    alert(`File "${file.name}" must be PDF, JPEG, or PNG`);
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>
