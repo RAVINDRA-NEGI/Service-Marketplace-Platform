@@ -1,7 +1,9 @@
 package com.marketplace.repository;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +15,9 @@ import com.marketplace.model.ProfessionalProfile;
 
 @Repository
 public interface AvailabilityRepository extends JpaRepository<Availability, Long> {
+    
     List<Availability> findByProfessionalAndDateOrderByStartTime(ProfessionalProfile professional, LocalDate date);
+    
     List<Availability> findByProfessionalOrderByDateAscStartTimeAsc(ProfessionalProfile professional);
     
     @Query("SELECT a FROM Availability a WHERE a.professional = :professional " +
@@ -24,4 +28,35 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate
     );
+    
+    @Query("SELECT a FROM Availability a WHERE a.professional = :professional " +
+           "AND a.date = :date AND a.isBooked = false " +
+           "AND NOT EXISTS (SELECT 1 FROM Availability a2 WHERE a2.professional = :professional " +
+           "AND a2.date = :date AND a2.isBooked = false AND " +
+           "a2.startTime < :endTime AND a2.endTime > :startTime) " +
+           "ORDER BY a.startTime ASC")
+    List<Availability> findNonOverlappingAvailableSlots(
+        @Param("professional") ProfessionalProfile professional,
+        @Param("date") LocalDate date,
+        @Param("startTime") LocalTime startTime,
+        @Param("endTime") LocalTime endTime
+    );
+    
+    boolean existsByProfessionalAndDateAndStartTimeAndEndTime(
+        ProfessionalProfile professional, 
+        LocalDate date, 
+        LocalTime startTime, 
+        LocalTime endTime
+    );
+    
+    Optional<Availability> findByProfessionalAndDateAndStartTimeAndEndTime(
+        ProfessionalProfile professional, 
+        LocalDate date, 
+        LocalTime startTime, 
+        LocalTime endTime
+    );
+    
+    List<Availability> findByProfessionalAndDateAndIsBookedFalse(ProfessionalProfile professional, LocalDate date);
+    
+    List<Availability> findByProfessionalAndIsBookedFalseOrderByDateAscStartTimeAsc(ProfessionalProfile professional);
 }

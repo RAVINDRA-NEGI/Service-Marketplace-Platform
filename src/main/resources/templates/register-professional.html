@@ -13,6 +13,9 @@
                     <p class="text-muted">Offer your services to clients</p>
                 </div>
                 <div class="card-body">
+                  	 <div th:if="${error}" class="alert alert-danger">
+                        <span th:text="${error}"></span>
+                    </div>
                     <!-- Error Messages -->
                     <div th:if="${#fields.hasErrors('userRegistrationDto.*')}" class="alert alert-danger">
                         <ul>

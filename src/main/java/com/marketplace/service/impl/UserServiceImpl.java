@@ -1,9 +1,12 @@
 package com.marketplace.service.impl;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.marketplace.dto.UserRegistrationDto;
 import com.marketplace.exception.UserAlreadyExistsException;
@@ -60,5 +63,11 @@ public class UserServiceImpl implements UserService {
 		User savedUser = userRepo.save(user);
 		logger.info("User registered successfully with ID : {}" , savedUser.getId());
 		return savedUser;
+	}
+	
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<User> findById(Long id) {
+	    return userRepo.findById(id);
 	}
 }

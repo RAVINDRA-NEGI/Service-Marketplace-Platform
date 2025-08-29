@@ -19,6 +19,13 @@
                     <i class="fas fa-briefcase"></i> I Provide Services
                 </a>
             </div>
+            <div th:if="${#authorization.expression('isAuthenticated()')}">
+                <div class="d-flex justify-content-center">
+                    <a th:href="@{/dashboard}" class="btn btn-success btn-lg mt-3">
+                        <i class="fas fa-tachometer-alt"></i> Go to My Dashboard
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 

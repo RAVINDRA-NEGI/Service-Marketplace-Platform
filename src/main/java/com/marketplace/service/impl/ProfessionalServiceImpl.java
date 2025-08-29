@@ -1,6 +1,13 @@
 package com.marketplace.service.impl;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -10,7 +17,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketplace.dto.ProfessionalProfileDto;
 import com.marketplace.exception.UserAlreadyExistsException;
 import com.marketplace.exception.UsernameTakenException;
@@ -51,7 +61,7 @@ public class ProfessionalServiceImpl implements ProfessionalService {
 
     @Override
     @Transactional
-    public ProfessionalProfile createProfile(User user, ProfessionalProfileDto profileDto) {
+    public ProfessionalProfile createProfile(User user, ProfessionalProfileDto profileDto) throws IOException {
         logger.info("Creating profile for user ID: {}", user.getId());
 
         if (profileRepository.existsByUser(user)) {
@@ -65,11 +75,34 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         profile.setUser(user);
         profile.setBio(profileDto.getBio());
         profile.setCertification(profileDto.getCertification());
-        profile.setProfilePhotoUrl(profileDto.getProfilePhotoUrl());
         profile.setCategory(category);
         profile.setHourlyRate(profileDto.getHourlyRate());
         profile.setServiceAreaCity(profileDto.getServiceAreaCity());
         profile.setServiceAreaState(profileDto.getServiceAreaState());
+
+        // Handle profile photo upload
+        if (profileDto.hasProfilePhoto()) {
+            try {
+                String[] photoUrls = saveProfilePhoto(profileDto.getProfilePhoto());
+                profile.setProfilePhotoPath(photoUrls[0]);
+                profile.setProfilePhotoUrl(photoUrls[1]);
+            } catch (IOException e) {
+                logger.error("Failed to upload profile photo during profile creation", e);
+                throw new IOException("Failed to upload profile photo: " + e.getMessage(), e);
+            }
+        }
+
+        // Handle certificates upload
+        if (profileDto.hasCertificates()) {
+            try {
+                String[] certData = saveCertificates(profileDto.getCertificates());
+                profile.setCertificatesPath(certData[0]);
+                profile.setCertificatesUrls(certData[1]);
+            } catch (IOException e) {
+                logger.error("Failed to upload certificates during profile creation", e);
+                throw new IOException("Failed to upload certificates: " + e.getMessage(), e);
+            }
+        }
 
         ProfessionalProfile savedProfile = profileRepository.save(profile);
         logger.info("Profile created successfully with ID: {}", savedProfile.getId());
@@ -78,7 +111,7 @@ public class ProfessionalServiceImpl implements ProfessionalService {
 
     @Override
     @Transactional
-    public ProfessionalProfile updateProfile(User user, ProfessionalProfileDto profileDto) {
+    public ProfessionalProfile updateProfile(User user, ProfessionalProfileDto profileDto) throws IOException {
         logger.info("Updating profile for user ID: {}", user.getId());
 
         ProfessionalProfile profile = profileRepository.findByUser(user)
@@ -89,11 +122,50 @@ public class ProfessionalServiceImpl implements ProfessionalService {
 
         profile.setBio(profileDto.getBio());
         profile.setCertification(profileDto.getCertification());
-        profile.setProfilePhotoUrl(profileDto.getProfilePhotoUrl());
         profile.setCategory(category);
         profile.setHourlyRate(profileDto.getHourlyRate());
         profile.setServiceAreaCity(profileDto.getServiceAreaCity());
         profile.setServiceAreaState(profileDto.getServiceAreaState());
+
+        // Handle profile photo upload during update
+        if (profileDto.hasProfilePhoto()) {
+            try {
+                String[] photoUrls = saveProfilePhoto(profileDto.getProfilePhoto());
+                profile.setProfilePhotoPath(photoUrls[0]);
+                profile.setProfilePhotoUrl(photoUrls[1]);
+            } catch (IOException e) {
+                logger.error("Failed to upload profile photo during profile update", e);
+                throw new IOException("Failed to upload profile photo: " + e.getMessage(), e);
+            }
+        }
+
+        // Handle certificates upload during update
+        if (profileDto.hasCertificates()) {
+            try {
+                String[] certData = saveCertificates(profileDto.getCertificates());
+                // Combine with existing certificates
+                List<String> allUrls = new ArrayList<>();
+                if (profile.getCertificatesUrls() != null && !profile.getCertificatesUrls().isEmpty()) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        List<String> existingUrls = mapper.readValue(profile.getCertificatesUrls(), new TypeReference<List<String>>(){});
+                        allUrls.addAll(existingUrls);
+                    } catch (Exception e) {
+                        logger.warn("Failed to parse existing certificate URLs", e);
+                    }
+                }
+                
+                ObjectMapper mapper = new ObjectMapper();
+                List<String> newUrls = mapper.readValue(certData[1], new TypeReference<List<String>>(){});
+                allUrls.addAll(newUrls);
+                
+                profile.setCertificatesPath(certData[0]);
+                profile.setCertificatesUrls(mapper.writeValueAsString(allUrls));
+            } catch (IOException e) {
+                logger.error("Failed to upload certificates during profile update", e);
+                throw new IOException("Failed to upload certificates: " + e.getMessage(), e);
+            }
+        }
 
         ProfessionalProfile updatedProfile = profileRepository.save(profile);
         logger.info("Profile updated successfully with ID: {}", updatedProfile.getId());
@@ -165,8 +237,6 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         List<ProfessionalProfile> profiles = profileRepository.findProfessionalsByFilters(
                 categoryId, city, minRating);
         
-        // For simplicity, we're not implementing full pagination here
-        // In a real app, you'd want to do this at the database level
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), profiles.size());
         
@@ -181,5 +251,129 @@ public class ProfessionalServiceImpl implements ProfessionalService {
                 .sorted((p1, p2) -> Double.compare(p2.getAverageRating(), p1.getAverageRating()))
                 .limit(limit)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public ProfessionalProfile updateProfilePhoto(User user, MultipartFile photoFile) throws IOException {
+        if (photoFile.isEmpty()) {
+            throw new IllegalArgumentException("Photo file is empty");
+        }
+
+        String[] photoUrls = saveProfilePhoto(photoFile);
+        
+        ProfessionalProfile profile = getProfileByUser(user);
+        profile.setProfilePhotoPath(photoUrls[0]);
+        profile.setProfilePhotoUrl(photoUrls[1]);
+        
+        return profileRepository.save(profile);
+    }
+    
+    @Override
+    @Transactional
+    public ProfessionalProfile updateCertificates(User user, List<MultipartFile> certificateFiles) throws IOException {
+        if (certificateFiles == null || certificateFiles.isEmpty()) {
+            throw new IllegalArgumentException("No certificate files provided");
+        }
+
+        String[] certData = saveCertificates(certificateFiles);
+
+        ProfessionalProfile profile = getProfileByUser(user);
+        
+        // Combine with existing certificates
+        List<String> allUrls = new ArrayList<>();
+        if (profile.getCertificatesUrls() != null && !profile.getCertificatesUrls().isEmpty()) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                List<String> existingUrls = mapper.readValue(profile.getCertificatesUrls(), new TypeReference<List<String>>(){});
+                allUrls.addAll(existingUrls);
+            } catch (Exception e) {
+                logger.warn("Failed to parse existing certificate URLs", e);
+            }
+        }
+        
+        ObjectMapper mapper = new ObjectMapper();
+        List<String> newUrls = mapper.readValue(certData[1], new TypeReference<List<String>>(){});
+        allUrls.addAll(newUrls);
+
+        profile.setCertificatesPath(certData[0]);
+        profile.setCertificatesUrls(mapper.writeValueAsString(allUrls));
+        
+        return profileRepository.save(profile);
+    }
+
+    private String[] saveProfilePhoto(MultipartFile photoFile) throws IOException {
+        // Validate file type using interface method
+        if (!isValidImageFile(photoFile)) {
+            throw new IllegalArgumentException("Only JPEG and PNG files are allowed for profile photos");
+        }
+
+        // Validate file size (5MB limit)
+        if (photoFile.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Profile photo size cannot exceed 5MB");
+        }
+
+        // Create upload directory
+        Path uploadDir = Paths.get("uploads/profile-photos");
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        // Generate unique filename
+        String originalFilename = photoFile.getOriginalFilename();
+        String fileExtension = originalFilename != null ? 
+            originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+        
+        // Save file
+        Path filePath = uploadDir.resolve(uniqueFilename);
+        Files.copy(photoFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return new String[]{filePath.toString(), "/uploads/profile-photos/" + uniqueFilename};
+    }
+
+    private String[] saveCertificates(List<MultipartFile> certificateFiles) throws IOException {
+        // Validate file types using interface method
+        for (MultipartFile file : certificateFiles) {
+            if (file.isEmpty()) continue;
+            
+            if (!isValidCertificateFile(file)) {
+                throw new IllegalArgumentException("Only PDF, JPEG, and PNG files are allowed for certificates");
+            }
+            
+            // Validate file size (10MB limit per file)
+            if (file.getSize() > 10 * 1024 * 1024) {
+                throw new IllegalArgumentException("Certificate file size cannot exceed 10MB: " + file.getOriginalFilename());
+            }
+        }
+
+        // Create upload directory
+        Path uploadDir = Paths.get("uploads/certificates");
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        List<String> newUrls = new ArrayList<>();
+        List<String> newPaths = new ArrayList<>();
+
+        for (MultipartFile file : certificateFiles) {
+            if (file.isEmpty()) continue;
+            
+            // Generate unique filename
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = originalFilename != null ? 
+                originalFilename.substring(originalFilename.lastIndexOf(".")) : ".pdf";
+            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+            
+            // Save file
+            Path filePath = uploadDir.resolve(uniqueFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            newPaths.add(filePath.toString());
+            newUrls.add("/uploads/certificates/" + uniqueFilename);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        return new String[]{String.join(",", newPaths), mapper.writeValueAsString(newUrls)};
     }
 }

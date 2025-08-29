@@ -72,36 +72,14 @@ public class AuthController {
         return "register-professional";
     }
 
-    @PostMapping("/register/client")
-    public String registerClient(@Valid @ModelAttribute("userRegistrationDto") UserRegistrationDto registrationDto,
-                               BindingResult result,
-                               RedirectAttributes redirectAttributes,
-                               Model model) {
-        if (result.hasErrors()) {
-            return "register-client";
-        }
-
-        try {
-            User user = userService.registerClient(registrationDto);
-            redirectAttributes.addFlashAttribute("message", "Client registered successfully! Please login.");
-            return "redirect:/login";
-        } catch (UserAlreadyExistsException e) {
-            model.addAttribute("userRegistrationDto", registrationDto);
-            result.rejectValue("email", "error.user", e.getMessage());
-            return "register-client";
-        } catch (UsernameTakenException e) {
-            model.addAttribute("userRegistrationDto", registrationDto);
-            result.rejectValue("username", "error.user", e.getMessage());
-            return "register-client";
-        }
-    }
-
     @PostMapping("/register/professional")
     public String registerProfessional(@Valid @ModelAttribute("userRegistrationDto") UserRegistrationDto registrationDto,
                                      BindingResult result,
                                      RedirectAttributes redirectAttributes,
                                      Model model) {
         if (result.hasErrors()) {
+            // Keep the DTO in model for form re-display
+            model.addAttribute("userRegistrationDto", registrationDto);
             return "register-professional";
         }
 
@@ -111,12 +89,37 @@ public class AuthController {
             return "redirect:/login";
         } catch (UserAlreadyExistsException e) {
             model.addAttribute("userRegistrationDto", registrationDto);
-            result.rejectValue("email", "error.user", e.getMessage());
+            model.addAttribute("error", e.getMessage());
             return "register-professional";
         } catch (UsernameTakenException e) {
             model.addAttribute("userRegistrationDto", registrationDto);
-            result.rejectValue("username", "error.user", e.getMessage());
+            model.addAttribute("error", e.getMessage());
             return "register-professional";
+        }
+    }
+
+    @PostMapping("/register/client")
+    public String registerClient(@Valid @ModelAttribute("userRegistrationDto") UserRegistrationDto registrationDto,
+                               BindingResult result,
+                               RedirectAttributes redirectAttributes,
+                               Model model) {
+        if (result.hasErrors()) {
+            model.addAttribute("userRegistrationDto", registrationDto);
+            return "register-client";
+        }
+
+        try {
+            User user = userService.registerClient(registrationDto);
+            redirectAttributes.addFlashAttribute("message", "Client registered successfully! Please login.");
+            return "redirect:/login";
+        } catch (UserAlreadyExistsException e) {
+            model.addAttribute("userRegistrationDto", registrationDto);
+            model.addAttribute("error", e.getMessage());
+            return "register-client";
+        } catch (UsernameTakenException e) {
+            model.addAttribute("userRegistrationDto", registrationDto);
+            model.addAttribute("error", e.getMessage());
+            return "register-client";
         }
     }
 
@@ -126,22 +129,14 @@ public class AuthController {
         
         if (authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_CLIENT"))) {
-            return "redirect:/client/dashboard";
+            return "redirect:/client/dashboard";  // This will go to ClientController
         } else if (authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_PROFESSIONAL"))) {
-            return "redirect:/professional/dashboard";
+            return "redirect:/professional/dashboard";  // This will go to ProfessionalController
         }
         
         return "redirect:/";
     }
 
-    @GetMapping("/client/dashboard")
-    public String clientDashboard() {
-        return "client/dashboard";
-    }
-
-    @GetMapping("/professional/dashboard")
-    public String professionalDashboard() {
-        return "professional/dashboard";
-    }
+    
 }

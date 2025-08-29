@@ -1,6 +1,7 @@
 package com.marketplace.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import jakarta.persistence.Column;
@@ -12,13 +13,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
-@Table(name = "availability")
+@Table(name = "availability", 
+       uniqueConstraints = @UniqueConstraint(columnNames = {"professional_id", "date", "start_time"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,24 +36,31 @@ public class Availability {
     @ToString.Exclude
     private ProfessionalProfile professional;
 
-    @Column(nullable = false)
+    @Column(name = "date", nullable = false)
     private LocalDate date;
 
-    @Column(nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
 
-    @Column(nullable = false)
+    @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
+    @Column(name = "is_booked", nullable = false)
     private boolean isBooked = false;
 
     @Column(name = "created_at")
-    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Constructor for creating availability
     public Availability(ProfessionalProfile professional, LocalDate date, LocalTime startTime, LocalTime endTime) {
         this.professional = professional;
         this.date = date;
         this.startTime = startTime;
         this.endTime = endTime;
+    }
+    
+    // Check if time slot overlaps with another
+    public boolean overlapsWith(LocalTime otherStart, LocalTime otherEnd) {
+        return this.startTime.isBefore(otherEnd) && otherStart.isBefore(this.endTime);
     }
 }

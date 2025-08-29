@@ -49,6 +49,16 @@ public class ProfessionalProfile {
     private String certification;
 
     private String profilePhotoUrl;
+    
+
+    @Column(name = "certificates_path")
+    private String certificatesPath;
+
+    @Column(name = "certificates_urls")
+    private String certificatesUrls; 
+
+    @Column(name = "profile_photo_path")
+    private String profilePhotoPath;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
