@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.marketplace.model.Availability;
 import com.marketplace.model.ProfessionalProfile;
+
+import jakarta.transaction.Transactional;
 
 @Repository
 public interface AvailabilityRepository extends JpaRepository<Availability, Long> {
@@ -59,4 +62,23 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
     List<Availability> findByProfessionalAndDateAndIsBookedFalse(ProfessionalProfile professional, LocalDate date);
     
     List<Availability> findByProfessionalAndIsBookedFalseOrderByDateAscStartTimeAsc(ProfessionalProfile professional);
+    /**
+     * Atomically marks an availability slot as booked if it's currently available
+     * @param availabilityId the ID of the availability slot
+     * @return the number of rows updated (1 if successful, 0 if slot was already booked)
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Availability a SET a.booked = true WHERE a.id = :availabilityId AND a.booked = false AND a.active = true")
+    int markAsBookedIfAvailable(@Param("availabilityId") Long availabilityId);
+    
+    /**
+     * Atomically releases a booked slot
+     * @param availabilityId the ID of the availability slot
+     * @return the number of rows updated
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Availability a SET a.booked = false WHERE a.id = :availabilityId")
+    int releaseSlot(@Param("availabilityId") Long availabilityId);
 }

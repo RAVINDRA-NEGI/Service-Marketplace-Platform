@@ -6,9 +6,20 @@ spring:
     username: root
     password: chutiya22
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
   jpa:
     hibernate:
      ddl-auto: update
     properties:
       hibernate:
        dialect: org.hibernate.dialect.MySQL8Dialect 
+  transaction:
+    default-timeout: 30
+logging:
+  level:
+   com:
+     marketplace:
+       service: INFO
+       controller: INFO
