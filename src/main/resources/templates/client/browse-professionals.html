@@ -6,6 +6,7 @@
 
 <div class="container my-5">
     <div class="row">
+        <!-- Sidebar Filters -->
         <div class="col-md-3">
             <div class="card">
                 <div class="card-header">
@@ -23,13 +24,11 @@
                                         th:selected="${cat.name == currentCategory}"></option>
                             </select>
                         </div>
-                        
                         <div class="mb-3">
                             <label for="city" class="form-label">City</label>
                             <input type="text" class="form-control" id="city" name="city" 
                                    th:value="${currentCity}" placeholder="Enter city">
                         </div>
-                        
                         <div class="mb-3">
                             <label for="minRating" class="form-label">Minimum Rating</label>
                             <select class="form-select" id="minRating" name="minRating">
@@ -40,64 +39,97 @@
                                 <option value="3.0" th:selected="${currentMinRating == 3.0}">3.0+ Stars</option>
                             </select>
                         </div>
-                        
                         <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                        <a th:href="@{/client/professionals}" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
                     </form>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Main Content -->
         <div class="col-md-9">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Find Professionals</h3>
-                <div th:if="${professionals.totalElements > 0}">
+                <div th:if="${professionals != null and professionals.totalElements > 0}">
                     <span th:text="${professionals.totalElements} + ' professionals found'"></span>
                 </div>
             </div>
-            
+
+            <!-- Flash Messages -->
             <div th:if="${message}" class="alert alert-success alert-dismissible fade show" th:text="${message}">
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
             <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" th:text="${error}">
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            
-            <div th:if="${!professionals.empty}">
+            <div th:if="${warning}" class="alert alert-warning alert-dismissible fade show" th:text="${warning}">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Professionals List -->
+            <div th:if="${professionals != null and !professionals.empty}">
                 <div class="row">
                     <div th:each="professional : ${professionals}" class="col-md-6 col-lg-4 mb-4">
-                        <div class="card h-100">
-                            <div th:if="${professional.profilePhotoUrl}" class="card-img-top" style="height: 200px; overflow: hidden;">
+                        <div class="card h-100 shadow-sm">
+                            <!-- Profile Photo Section (working logic) -->
+                            <div th:if="${professional.profilePhotoUrl != null and !#strings.isEmpty(professional.profilePhotoUrl)}" 
+                                 class="card-img-top" style="height: 200px; overflow: hidden;">
                                 <img th:src="${professional.profilePhotoUrl}" 
                                      class="img-fluid" 
                                      style="width: 100%; height: 100%; object-fit: cover;"
-                                     alt="Profile Photo">
+                                     alt="Profile Photo"
+                                     onerror="this.parentElement.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
                             </div>
-                            <div th:if="${!professional.profilePhotoUrl}" class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <div th:if="${professional.profilePhotoUrl == null or #strings.isEmpty(professional.profilePhotoUrl)}" 
+                                 class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                                 style="height: 200px;">
                                 <i class="fas fa-user fa-3x text-muted"></i>
                             </div>
-                            
+
                             <div class="card-body d-flex flex-column">
-                                <h5 class="card-title" th:text="${professional.user.fullName}"></h5>
-                                <p class="card-text text-muted" th:text="${professional.category.name}"></p>
-                                
+                                <h5 class="card-title" th:text="${professional.user?.fullName ?: 'Unknown Professional'}">Professional Name</h5>
+                                <p class="card-text text-muted mb-2" th:text="${professional.category?.name ?: 'Unknown Category'}">Category</p>
+
+                                <!-- Location -->
+                                <p class="card-text text-muted small mb-2" th:if="${professional.serviceAreaCity != null and !#strings.isEmpty(professional.serviceAreaCity)}">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span th:text="${professional.serviceAreaCity + (professional.serviceAreaState != null ? (', ' + professional.serviceAreaState) : '')}"></span>
+                                </p>
+
+                                <!-- Bio Preview -->
+                                <p class="card-text flex-grow-1" 
+                                   th:text="${professional.bio != null and !#strings.isEmpty(professional.bio) ? #strings.abbreviate(professional.bio, 100) : 'No bio available'}">Bio preview...</p>
+
                                 <div class="mt-auto">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="badge bg-primary" 
-                                              th:text="${'$' + #numbers.formatDecimal(professional.hourlyRate, 1, 2) + '/hr'}"
-                                              th:if="${professional.hourlyRate}"></span>
-                                        <span class="badge bg-secondary" th:if="${!professional.hourlyRate}">Rate N/A</span>
-                                        
-                                        <div th:if="${professional.averageRating > 0}">
-                                            <span th:text="${#numbers.formatDecimal(professional.averageRating, 1, 1)}"></span>
+                                    <!-- Hourly Rate and Rating -->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span th:if="${professional.hourlyRate != null and professional.hourlyRate > 0}" 
+                                              class="badge bg-primary fs-6">
+                                            <span th:text="${'₹' + #numbers.formatDecimal(professional.hourlyRate, 1, 2) + '/hr'}"></span>
+                                        </span>
+                                        <span th:unless="${professional.hourlyRate != null and professional.hourlyRate > 0}" 
+                                              class="badge bg-secondary fs-6">Rate N/A</span>
+
+                                        <div th:if="${professional.averageRating != null and professional.averageRating > 0}">
+                                            <span th:text="${#numbers.formatDecimal(professional.averageRating, 1, 1)}">0.0</span>
                                             <i class="fas fa-star text-warning"></i>
-                                            <span class="text-muted" th:text="${'(' + professional.totalReviews + ')'}"></span>
+                                            <span class="text-muted small" th:text="${'(' + (professional.totalReviews ?: 0) + ')'}">(0)</span>
+                                        </div>
+                                        <div th:unless="${professional.averageRating != null and professional.averageRating > 0}">
+                                            <span class="text-muted small">No reviews yet</span>
                                         </div>
                                     </div>
-                                    
-                                    <p class="card-text" th:text="${#strings.abbreviate(professional.bio, 100)}"></p>
-                                    
+
+                                    <!-- Certification Badge -->
+                                    <div th:if="${professional.certification != null and !#strings.isEmpty(professional.certification)}" class="mb-2">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-certificate"></i> Certified
+                                        </span>
+                                    </div>
+
+                                    <!-- Action Buttons -->
                                     <div class="d-flex gap-2 mt-3">
-                                        <a th:href="@{/client/bookings/professional/{id}(id=${professional.id})}" 
+                                        <a th:href="@{/client/professional/{id}(id=${professional.id})}" 
                                            class="btn btn-primary btn-sm flex-grow-1">
                                             <i class="fas fa-calendar-check"></i> Book Now
                                         </a>
@@ -111,39 +143,66 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Pagination -->
-                <nav th:if="${professionals.totalPages > 1}">
+                <nav th:if="${professionals.totalPages > 1}" class="mt-4">
                     <ul class="pagination justify-content-center">
-                        <li class="page-item" th:classappend="${!professionals.first} ? '' : 'disabled'">
+                        <li class="page-item" th:classappend="${professionals.first} ? 'disabled'">
                             <a class="page-link" 
                                th:href="@{/client/professionals(page=${professionals.number - 1}, category=${currentCategory}, city=${currentCity}, minRating=${currentMinRating})}">
-                                Previous
+                                <i class="fas fa-chevron-left"></i> Previous
                             </a>
                         </li>
                         
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, professionals.totalPages - 1)}" 
-                            th:classappend="${i == professionals.number} ? 'active'">
-                            <a class="page-link" 
-                               th:href="@{/client/professionals(page=${i}, category=${currentCategory}, city=${currentCity}, minRating=${currentMinRating})}" 
-                               th:text="${i + 1}"></a>
-                        </li>
+                        <!-- Show page numbers (limit to 5 pages for better UX) -->
+                        <th:block th:with="startPage=${T(java.lang.Math).max(0, professionals.number - 2)}, 
+                                           endPage=${T(java.lang.Math).min(professionals.totalPages - 1, professionals.number + 2)}">
+                            <li class="page-item" th:each="i : ${#numbers.sequence(startPage, endPage)}" 
+                                th:classappend="${i == professionals.number} ? 'active'">
+                                <a class="page-link" 
+                                   th:href="@{/client/professionals(page=${i}, category=${currentCategory}, city=${currentCity}, minRating=${currentMinRating})}" 
+                                   th:text="${i + 1}"></a>
+                            </li>
+                        </th:block>
                         
-                        <li class="page-item" th:classappend="${!professionals.last} ? '' : 'disabled'">
+                        <li class="page-item" th:classappend="${professionals.last} ? 'disabled'">
                             <a class="page-link" 
                                th:href="@{/client/professionals(page=${professionals.number + 1}, category=${currentCategory}, city=${currentCity}, minRating=${currentMinRating})}">
-                                Next
+                                Next <i class="fas fa-chevron-right"></i>
                             </a>
                         </li>
                     </ul>
                 </nav>
             </div>
             
-            <div th:if="${professionals.empty}">
-                <div class="text-center py-5">
-                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                    <h4>No professionals found</h4>
-                    <p class="text-muted">Try adjusting your search filters</p>
+            <!-- No Results Found -->
+            <div th:if="${professionals == null or professionals.empty}" class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">No professionals found</h4>
+                <p class="text-muted mb-4">
+                    Try adjusting your search filters or 
+                    <span th:if="${(currentCategory != null and !#strings.isEmpty(currentCategory)) or (currentCity != null and !#strings.isEmpty(currentCity)) or currentMinRating != null}">
+                        <a th:href="@{/client/professionals}" class="text-decoration-none">clear all filters</a>
+                    </span>
+                    <span th:unless="${(currentCategory != null and !#strings.isEmpty(currentCategory)) or (currentCity != null and !#strings.isEmpty(currentCity)) or currentMinRating != null}">
+                        check back later for new professionals
+                    </span>
+                </p>
+                
+                <!-- Show active filters if any -->
+                <div th:if="${currentCategory or currentCity or currentMinRating}" class="mt-3">
+                    <small class="text-muted">Active filters:</small>
+                    <div class="d-flex justify-content-center gap-2 mt-2 flex-wrap">
+                        <span th:if="${currentCategory and !#strings.isEmpty(currentCategory)}" class="badge bg-secondary">
+                            Category: <span th:text="${currentCategory}"></span>
+                        </span>
+                        <span th:if="${currentCity and !#strings.isEmpty(currentCity)}" class="badge bg-secondary">
+                            City: <span th:text="${currentCity}"></span>
+                        </span>
+                        <span th:if="${currentMinRating}" class="badge bg-secondary">
+                            Rating: <span th:text="${currentMinRating}"></span>+ stars
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -152,5 +211,29 @@
 
 <div th:replace="~{fragments/header :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Enhanced image error handling
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle image loading errors
+    const profileImages = document.querySelectorAll('img[alt="Profile Photo"]');
+    profileImages.forEach(img => {
+        img.addEventListener('error', function() {
+            const fallbackDiv = this.nextElementSibling;
+            if (fallbackDiv && fallbackDiv.classList.contains('position-absolute')) {
+                this.style.display = 'none';
+                fallbackDiv.style.display = 'flex';
+            }
+        });
+        
+        img.addEventListener('load', function() {
+            const fallbackDiv = this.nextElementSibling;
+            if (fallbackDiv && fallbackDiv.classList.contains('position-absolute')) {
+                fallbackDiv.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>

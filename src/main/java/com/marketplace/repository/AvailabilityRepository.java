@@ -64,21 +64,38 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
     List<Availability> findByProfessionalAndIsBookedFalseOrderByDateAscStartTimeAsc(ProfessionalProfile professional);
     /**
      * Atomically marks an availability slot as booked if it's currently available
+     * Using native SQL query to avoid JPA property mapping issues
      * @param availabilityId the ID of the availability slot
      * @return the number of rows updated (1 if successful, 0 if slot was already booked)
      */
     @Modifying
     @Transactional
-    @Query("UPDATE Availability a SET a.booked = true WHERE a.id = :availabilityId AND a.booked = false AND a.active = true")
+    @Query(value = "UPDATE availability SET is_booked = true WHERE id = :availabilityId AND is_booked = false", 
+           nativeQuery = true)
     int markAsBookedIfAvailable(@Param("availabilityId") Long availabilityId);
     
     /**
      * Atomically releases a booked slot
+     * Using native SQL query to avoid JPA property mapping issues
      * @param availabilityId the ID of the availability slot
      * @return the number of rows updated
      */
     @Modifying
     @Transactional
-    @Query("UPDATE Availability a SET a.booked = false WHERE a.id = :availabilityId")
+    @Query(value = "UPDATE availability SET is_booked = false WHERE id = :availabilityId", 
+           nativeQuery = true)
     int releaseSlot(@Param("availabilityId") Long availabilityId);
+    
+    // Alternative JPQL version if you prefer (try this if the above doesn't work)
+    /*
+    @Modifying
+    @Transactional
+    @Query("UPDATE Availability a SET a.isBooked = true WHERE a.id = :availabilityId AND a.isBooked = false")
+    int markAsBookedIfAvailable(@Param("availabilityId") Long availabilityId);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE Availability a SET a.isBooked = false WHERE a.id = :availabilityId")
+    int releaseSlot(@Param("availabilityId") Long availabilityId);
+    */
 }

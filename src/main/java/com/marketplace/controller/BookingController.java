@@ -1,7 +1,5 @@
 package com.marketplace.controller;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -10,9 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,18 +21,14 @@ import com.marketplace.exception.BookingException;
 import com.marketplace.exception.ProfessionalNotFoundException;
 import com.marketplace.exception.SlotNotAvailableException;
 import com.marketplace.exception.UnauthorizedAccessException;
-import com.marketplace.model.Availability;
 import com.marketplace.model.Booking;
 import com.marketplace.model.Booking.BookingStatus;
-import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
 import com.marketplace.security.service.UserDetailsImpl;
 import com.marketplace.service.AvailabilityService;
 import com.marketplace.service.BookingService;
 import com.marketplace.service.ProfessionalService;
 import com.marketplace.service.UserService;
-
-import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/client/bookings")
@@ -119,82 +111,32 @@ public class BookingController {
         }
     }
 
-    @GetMapping("/professional/{professionalId}")
-    public String viewProfessionalAvailability(
-            @PathVariable Long professionalId,
-            @RequestParam(value = "date", required = false) String dateStr,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        
-        try {
-            User currentUser = requireAuthentication();
-            
-            // Validate professional ID
-            if (professionalId == null || professionalId <= 0) {
-                redirectAttributes.addFlashAttribute("error", "Invalid professional ID");
-                return "redirect:/client/search";
-            }
-
-            ProfessionalProfile professional = professionalService.getProfileById(professionalId);
-            
-            LocalDate selectedDate;
-            try {
-                selectedDate = dateStr != null && !dateStr.trim().isEmpty() 
-                    ? LocalDate.parse(dateStr) 
-                    : LocalDate.now().plusDays(1);
-                    
-                // Validate date is not in the past
-                if (selectedDate.isBefore(LocalDate.now())) {
-                    selectedDate = LocalDate.now().plusDays(1);
-                    model.addAttribute("warning", "Selected date was in the past. Showing availability from tomorrow.");
-                }
-            } catch (DateTimeParseException e) {
-                logger.warn("Invalid date format provided: {}", dateStr);
-                selectedDate = LocalDate.now().plusDays(1);
-                model.addAttribute("warning", "Invalid date format. Showing availability from tomorrow.");
-            }
-            
-            // Get available slots for the next 30 days
-            LocalDate endDate = selectedDate.plusDays(30);
-            List<Availability> availableSlots = 
-               availabilityService.getAvailableSlots(professional.getUser(), selectedDate, endDate);
-            
-            model.addAttribute("professional", professional);
-            model.addAttribute("selectedDate", selectedDate);
-            model.addAttribute("availableSlots", availableSlots);
-            model.addAttribute("bookingDto", new BookingDto());
-            
-            return "client/book-availability";
-            
-        } catch (UnauthorizedAccessException e) {
-            return "redirect:/login";
-        } catch (ProfessionalNotFoundException e) {
-            logger.warn("Professional not found with ID: {}", professionalId);
-            redirectAttributes.addFlashAttribute("error", "Professional not found");
-            return "redirect:/client/search";
-        } catch (Exception e) {
-            logger.error("Error viewing professional availability for ID: " + professionalId, e);
-            redirectAttributes.addFlashAttribute("error", "An error occurred while loading availability");
-            return "redirect:/client/search";
-        }
-    }
-
     @PostMapping("/create")
     public String createBooking(
-            @Valid @ModelAttribute("bookingDto") BookingDto bookingDto,
-            BindingResult result,
+            @RequestParam("professionalId") Long professionalId,
+            @RequestParam("availabilityId") Long availabilityId,
+            @RequestParam(value = "serviceDetails", required = false) String serviceDetails,
             RedirectAttributes redirectAttributes) {
         
         try {
             User currentUser = requireAuthentication();
 
-            if (result.hasErrors()) {
-                StringBuilder errorMessages = new StringBuilder("Please correct the following errors: ");
-                result.getAllErrors().forEach(error -> 
-                    errorMessages.append(error.getDefaultMessage()).append("; "));
-                redirectAttributes.addFlashAttribute("error", errorMessages.toString());
-                return "redirect:/client/bookings/professional/" + bookingDto.getProfessionalId();
+            // Validate required parameters
+            if (professionalId == null || professionalId <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Invalid professional ID");
+                return "redirect:/client/professionals";
             }
+            
+            if (availabilityId == null || availabilityId <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Invalid availability slot");
+                return "redirect:/client/professional/" + professionalId;
+            }
+
+            // Create BookingDto from form parameters
+            BookingDto bookingDto = new BookingDto();
+            bookingDto.setProfessionalId(professionalId);
+            bookingDto.setAvailabilityId(availabilityId);
+            bookingDto.setServiceDetails(serviceDetails);
 
             Booking booking = bookingService.createBooking(currentUser, bookingDto);
             redirectAttributes.addFlashAttribute("message", 
@@ -206,22 +148,20 @@ public class BookingController {
         } catch (SlotNotAvailableException e) {
             logger.warn("Slot not available for booking creation", e);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/client/bookings/professional/" + bookingDto.getProfessionalId();
+            return "redirect:/client/professional/" + professionalId;
         } catch (ProfessionalNotFoundException | AvailabilityNotFoundException e) {
             logger.warn("Resource not found during booking creation", e);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/client/search";
+            return "redirect:/client/professionals";
         } catch (BookingException e) {
             logger.error("Business logic error during booking creation", e);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/client/bookings/professional/" + 
-                (bookingDto.getProfessionalId() != null ? bookingDto.getProfessionalId() : "");
+            return "redirect:/client/professional/" + (professionalId != null ? professionalId : "");
         } catch (Exception e) {
             logger.error("Unexpected error during booking creation", e);
             redirectAttributes.addFlashAttribute("error", 
                 "An unexpected error occurred while creating your booking. Please try again.");
-            return "redirect:/client/bookings/professional/" + 
-                (bookingDto.getProfessionalId() != null ? bookingDto.getProfessionalId() : "");
+            return "redirect:/client/professional/" + (professionalId != null ? professionalId : "");
         }
     }
 
@@ -264,6 +204,11 @@ public class BookingController {
         
         try {
             User currentUser = requireAuthentication();
+            
+            if (availabilityId == null || availabilityId <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Invalid availability ID");
+                return "redirect:/client/bookings";
+            }
             
             boolean canBook = bookingService.canBookSlot(availabilityId, currentUser);
             if (canBook) {
