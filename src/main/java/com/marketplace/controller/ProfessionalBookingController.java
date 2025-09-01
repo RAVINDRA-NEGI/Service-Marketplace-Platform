@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.marketplace.enums.BookingStatus;
 import com.marketplace.model.Booking;
-import com.marketplace.model.Booking.BookingStatus;
 import com.marketplace.model.User;
 import com.marketplace.security.service.UserDetailsImpl;
 import com.marketplace.service.BookingService;
@@ -59,7 +59,7 @@ public class ProfessionalBookingController {
                 bookings = bookingService.getProfessionalBookingsByStatus(currentUser, bookingStatus);
                 model.addAttribute("currentStatus", status);
             } else {
-                bookings = bookingService.getProfessionalBookings(currentUser);
+                bookings = bookingService.getProfessionalBookingsWithDetails(currentUser);
             }
             
             model.addAttribute("bookings", bookings);
@@ -70,10 +70,31 @@ public class ProfessionalBookingController {
         }
     }
 
-    @PostMapping("/update-status/{id}")
-    public String updateBookingStatus(@PathVariable Long id,
-                                    @RequestParam("status") String status,
-                                    RedirectAttributes redirectAttributes) {
+    @GetMapping("/{id}")
+    public String viewBookingDetails(@PathVariable Long id, Model model) {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            if (!bookingService.canManageBooking(id, currentUser)) {
+                model.addAttribute("error", "Access denied");
+                return "error";
+            }
+            
+            Booking booking = bookingService.getBookingById(id);
+            model.addAttribute("booking", booking);
+            return "professional/booking-detail";
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+            return "professional/bookings";
+        }
+    }
+
+    @PostMapping("/accept/{id}")
+    public String acceptBooking(@PathVariable Long id,
+                               RedirectAttributes redirectAttributes) {
         
         User currentUser = getCurrentUser();
         if (currentUser == null) {
@@ -81,9 +102,46 @@ public class ProfessionalBookingController {
         }
 
         try {
-            BookingStatus bookingStatus = BookingStatus.valueOf(status.toUpperCase());
-            Booking booking = bookingService.updateBookingStatus(id, currentUser, bookingStatus);
-            redirectAttributes.addFlashAttribute("message", "Booking status updated successfully!");
+            Booking booking = bookingService.acceptBooking(id, currentUser);
+            redirectAttributes.addFlashAttribute("message", "Booking accepted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/professional/bookings";
+    }
+
+    @PostMapping("/reject/{id}")
+    public String rejectBooking(@PathVariable Long id,
+                               RedirectAttributes redirectAttributes) {
+        
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            Booking booking = bookingService.rejectBooking(id, currentUser);
+            redirectAttributes.addFlashAttribute("message", "Booking rejected successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/professional/bookings";
+    }
+
+    @PostMapping("/complete/{id}")
+    public String markAsCompleted(@PathVariable Long id,
+                                 RedirectAttributes redirectAttributes) {
+        
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            Booking booking = bookingService.markAsCompleted(id, currentUser);
+            redirectAttributes.addFlashAttribute("message", "Booking marked as completed!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }

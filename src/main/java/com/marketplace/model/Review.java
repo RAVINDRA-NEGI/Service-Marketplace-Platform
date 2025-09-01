@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -38,20 +39,36 @@ public class Review {
     @ToString.Exclude
     private User client;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false)
+    @ToString.Exclude
+    private Booking booking;
+
     @Min(1)
     @Max(5)
+    @Column(nullable = false)
     private Integer rating;
 
     @NotBlank
-    @Column(length = 1000)
+    @Column(length = 1000, nullable = false)
     private String comment;
 
     @Column(name = "created_at")
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
 
-    public Review(ProfessionalProfile professional, User client, Integer rating, String comment) {
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt = java.time.LocalDateTime.now();
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
+    // Constructor for creating new review
+    public Review(ProfessionalProfile professional, User client, Booking booking, Integer rating, String comment) {
         this.professional = professional;
         this.client = client;
+        this.booking = booking;
         this.rating = rating;
         this.comment = comment;
     }

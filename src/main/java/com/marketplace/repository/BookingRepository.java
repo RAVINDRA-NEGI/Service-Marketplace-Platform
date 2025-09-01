@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.marketplace.enums.BookingStatus;
 import com.marketplace.model.Booking;
-import com.marketplace.model.Booking.BookingStatus;
 import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
 

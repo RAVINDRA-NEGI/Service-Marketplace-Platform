@@ -10,14 +10,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.marketplace.dto.BookingDto;
+import com.marketplace.enums.BookingStatus;
 import com.marketplace.exception.AvailabilityNotFoundException;
 import com.marketplace.exception.BookingException;
 import com.marketplace.exception.ProfessionalNotFoundException;
 import com.marketplace.exception.SlotNotAvailableException;
 import com.marketplace.exception.UnauthorizedAccessException;
+import com.marketplace.exception.UsernameTakenException;
 import com.marketplace.model.Availability;
 import com.marketplace.model.Booking;
-import com.marketplace.model.Booking.BookingStatus;
 import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
 import com.marketplace.repository.AvailabilityRepository;
@@ -348,5 +349,88 @@ public class BookingServiceImpl implements BookingService {
         }
         
         return booking;
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Booking> getProfessionalBookingsWithDetails(User user) {
+        ProfessionalProfile professional = profileRepository.findByUser(user)
+                .orElseThrow(() -> new UsernameTakenException(Constants.PROFILE_NOT_FOUND));
+        return bookingRepository.findByProfessionalOrderByCreatedAtDesc(professional);
+    }
+
+    @Override
+    @Transactional
+    public Booking acceptBooking(Long bookingId, User professionalUser) {
+        Booking booking = getBookingById(bookingId);
+        
+        // Verify professional owns this booking
+        if (!booking.getProfessional().getUser().getId().equals(professionalUser.getId())) {
+            throw new UsernameTakenException("Access denied");
+        }
+        
+        // Can only accept pending bookings
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new UsernameTakenException("Booking is not in pending status");
+        }
+        
+        booking.setStatus(BookingStatus.CONFIRMED);
+        return bookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public Booking rejectBooking(Long bookingId, User professionalUser) {
+        Booking booking = getBookingById(bookingId);
+        
+        // Verify professional owns this booking
+        if (!booking.getProfessional().getUser().getId().equals(professionalUser.getId())) {
+            throw new UsernameTakenException("Access denied");
+        }
+        
+        // Can only reject pending bookings
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new UsernameTakenException("Booking is not in pending status");
+        }
+        
+        booking.setStatus(BookingStatus.REJECTED);
+        
+        // Free up the availability slot
+        if (booking.getAvailability() != null) {
+            booking.getAvailability().setBooked(false);
+            availabilityRepository.save(booking.getAvailability());
+        }
+        
+        return bookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public Booking markAsCompleted(Long bookingId, User professionalUser) {
+        Booking booking = getBookingById(bookingId);
+        
+        // Verify professional owns this booking
+        if (!booking.getProfessional().getUser().getId().equals(professionalUser.getId())) {
+            throw new UsernameTakenException("Access denied");
+        }
+        
+        // Can only complete confirmed bookings
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new UsernameTakenException("Booking must be confirmed to mark as completed");
+        }
+        
+        booking.setStatus(BookingStatus.COMPLETED);
+        return bookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canManageBooking(Long bookingId, User professionalUser) {
+        try {
+            Booking booking = getBookingById(bookingId);
+            return booking.getProfessional().getUser().getId().equals(professionalUser.getId());
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

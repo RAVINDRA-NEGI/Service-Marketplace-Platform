@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.marketplace.dto.BookingDto;
+import com.marketplace.enums.BookingStatus;
 import com.marketplace.model.Booking;
-import com.marketplace.model.Booking.BookingStatus;
 import com.marketplace.model.User;
 
 public interface BookingService {
@@ -34,4 +34,11 @@ public interface BookingService {
     // Get by ID
     Booking getBookingById(Long id);
     Booking getBookingByIdAndUser(Long id, User user);
+    
+ // Add to existing interface
+    List<Booking> getProfessionalBookingsWithDetails(User professional);
+    Booking acceptBooking(Long bookingId, User professional);
+    Booking rejectBooking(Long bookingId, User professional);
+    Booking markAsCompleted(Long bookingId, User professional);
+    boolean canManageBooking(Long bookingId, User professional);
 }

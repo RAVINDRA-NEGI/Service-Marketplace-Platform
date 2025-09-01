@@ -89,31 +89,32 @@
                                 </div>
                             </div>
                             
-                            <div class="row mb-3">
-                                <div class="col-sm-4"><strong>Certifications:</strong></div>
-                                <div class="col-sm-8">
-                                    <div th:if="${profile.certificatesUrls != null and !#strings.isEmpty(profile.certificatesUrls)}">
-                                        <div class="d-flex flex-wrap gap-2">
-                                            <th:block th:each="url, iterStat : ${T(com.fasterxml.jackson.databind.ObjectMapper).new().readValue(profile.certificatesUrls, T(java.util.List))}">
-                                                <a th:href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                                    <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
-                                                    <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
-                                                    Certificate [[${iterStat.count}]]
-                                                </a>
-                                            </th:block>
-                                        </div>
-                                    </div>
-                                    <div th:if="${profile.certificatesUrls == null or #strings.isEmpty(profile.certificatesUrls)}">
-                                        <span class="text-muted">No certifications uploaded</span>
-                                    </div>
-                                    
-                                    <div class="mt-2">
-                                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#certificatesModal">
-                                            <i class="fas fa-upload"></i> Upload More Certificates
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+								<div class="row mb-3">
+								    <div class="col-sm-4"><strong>Certifications:</strong></div>
+								    <div class="col-sm-8">
+								        <!-- Use the transient method instead of Jackson parsing -->
+								        <div th:if="${profile.hasCertificates()}">
+								            <div class="d-flex flex-wrap gap-2">
+								                <th:block th:each="url, iterStat : ${profile.certificatesList}">
+								                    <a th:href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary">
+								                        <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
+								                        <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
+								                        Certificate [[${iterStat.count}]]
+								                    </a>
+								                </th:block>
+								            </div>
+								        </div>
+								        <div th:if="${!profile.hasCertificates()}">
+								            <span class="text-muted">No certifications uploaded</span>
+								        </div>
+								        
+								        <div class="mt-2">
+								            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#certificatesModal">
+								                <i class="fas fa-upload"></i> Upload More Certificates
+								            </button>
+								        </div>
+								    </div>
+								</div>
                             
                             <div class="row mb-3" th:if="${profile.certification != null and !#strings.isEmpty(profile.certification)}">
                                 <div class="col-sm-4"><strong>Certification Details:</strong></div>

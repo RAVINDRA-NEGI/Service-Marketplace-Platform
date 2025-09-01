@@ -91,17 +91,18 @@
                     </div>
                     
                     <!-- Certificates -->
-                    <div th:if="${profile != null and profile.certificatesUrls != null and !#strings.isEmpty(profile.certificatesUrls)}" class="mb-4">
-                        <h5>Certifications</h5>
-                        <div class="list-group">
-                            <th:block th:each="url : ${#json.parseObject(profile.certificatesUrls)}">
-                                <a th:href="${url}" target="_blank" class="list-group-item list-group-item-action">
-                                    <i class="fas fa-file-pdf"></i> 
-                                    <span th:text="${url.substring(url.lastIndexOf('/') + 1)}"></span>
-                                </a>
-                            </th:block>
-                        </div>
-                    </div>
+					<div th:if="${profile != null and profile.hasCertificates()}" class="mb-4">
+					    <h5>Certifications</h5>
+					    <div class="list-group">
+					        <th:block th:each="url : ${profile.certificatesList}">
+					            <a th:href="${url}" target="_blank" class="list-group-item list-group-item-action">
+					                <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
+					                <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
+					                <span th:text="${url.substring(url.lastIndexOf('/') + 1)}"></span>
+					            </a>
+					        </th:block>
+					    </div>
+					</div>
                     
                     <!-- Availability Calendar -->
                     <div th:if="${profile != null}" class="mb-4">

@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.marketplace.dto.BookingDto;
+import com.marketplace.enums.BookingStatus;
 import com.marketplace.exception.AvailabilityNotFoundException;
 import com.marketplace.exception.BookingException;
 import com.marketplace.exception.ProfessionalNotFoundException;
 import com.marketplace.exception.SlotNotAvailableException;
 import com.marketplace.exception.UnauthorizedAccessException;
 import com.marketplace.model.Booking;
-import com.marketplace.model.Booking.BookingStatus;
 import com.marketplace.model.User;
 import com.marketplace.security.service.UserDetailsImpl;
 import com.marketplace.service.AvailabilityService;
@@ -32,9 +32,9 @@ import com.marketplace.service.UserService;
 
 @Controller
 @RequestMapping("/client/bookings")
-public class BookingController {
+public class UserBookingController {
 
-    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserBookingController.class);
 
     private final BookingService bookingService;
     private final ProfessionalService professionalService;
@@ -42,7 +42,7 @@ public class BookingController {
     private final AvailabilityService availabilityService;
     
 
-    public BookingController(BookingService bookingService, ProfessionalService professionalService, 
+    public UserBookingController(BookingService bookingService, ProfessionalService professionalService, 
                            UserService userService, AvailabilityService availabilityService) {
         this.bookingService = bookingService;
         this.professionalService = professionalService;

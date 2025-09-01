@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.marketplace.enums.BookingStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -85,11 +87,5 @@ public class Booking {
     }
    
 
-    public enum BookingStatus {
-        PENDING,      // Booking requested but not confirmed
-        CONFIRMED,    // Booking confirmed by professional
-        CANCELLED,    // Booking cancelled by client or professional
-        COMPLETED,    // Service completed
-        REJECTED      // Booking rejected by professional
-    }
+    
 }

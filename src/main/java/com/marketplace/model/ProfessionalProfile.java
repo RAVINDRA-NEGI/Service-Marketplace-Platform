@@ -2,9 +2,15 @@ package com.marketplace.model;
 
 
 
+import java.beans.Transient;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -92,6 +98,7 @@ public class ProfessionalProfile {
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
+        
     }
 
     public ProfessionalProfile(User user, String bio, ServiceCategory category) {
@@ -99,4 +106,31 @@ public class ProfessionalProfile {
         this.bio = bio;
         this.category = category;
     }
+    @Transient
+    public List<String> getCertificatesList() {
+        if (certificatesUrls == null || certificatesUrls.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            TypeReference<List<String>> typeRef = new TypeReference<List<String>>() {};
+            return mapper.readValue(certificatesUrls, typeRef);
+        } catch (Exception e) {
+            // If JSON parsing fails, try to split by comma (fallback)
+            return Arrays.asList(certificatesUrls.split(","))
+                        .stream()
+                        .map(String::trim)
+                        .filter(url -> !url.isEmpty())
+                        .collect(Collectors.toList());
+        }
+    }
+    
+    // Helper method to check if certificates exist
+    @Transient
+    public boolean hasCertificates() {
+        return certificatesUrls != null && 
+               !certificatesUrls.trim().isEmpty() && 
+               !getCertificatesList().isEmpty();
+    }
+    
 }
