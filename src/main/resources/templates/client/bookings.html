@@ -100,21 +100,6 @@
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <!-- Review Button for Completed Bookings -->
-                    <div th:if="${booking.status?.name() == 'COMPLETED'}">
-                        <div th:if="${!@reviewService.existsByBooking(booking)}">
-                            <a th:href="@{/client/reviews/create/{bookingId}(bookingId=${booking.id})}" 
-                               class="btn btn-sm btn-outline-success mb-2">
-                                <i class="fas fa-star"></i> Leave Review
-                            </a>
-                        </div>
-                        <div th:if="${@reviewService.existsByBooking(booking)}">
-                            <button class="btn btn-sm btn-outline-secondary mb-2" disabled>
-                                <i class="fas fa-check"></i> Reviewed
-                            </button>
-                        </div>
-                    </div>
-                    
                     <!-- Cancel Button for Pending/Confirmed Bookings -->
                     <div th:if="${booking.status?.name() == 'PENDING' or booking.status?.name() == 'CONFIRMED'}">
                         <form th:action="@{/client/bookings/cancel/{id}(id=${booking.id})}" method="post" class="d-inline">
@@ -126,14 +111,23 @@
                         </form>
                     </div>
                     
-                    <!-- Completed Status -->
-                    <div th:if="${booking.status?.name() == 'COMPLETED' and @reviewService.existsByBooking(booking)}">
-                        <button class="btn btn-sm btn-outline-primary" disabled>
-                            <i class="fas fa-check"></i> Completed
-                        </button>
-                    </div>
-                    
-                    <!-- Cancelled Status -->
+						<div th:if="${booking.status?.name() == 'COMPLETED'}">
+						    <div th:if="${@reviewService.canReviewBooking(currentUser, booking.id)}">
+						        <a th:href="@{/client/reviews/create/{bookingId}(bookingId=${booking.id})}" 
+						           class="btn btn-sm btn-success me-2">
+						            <i class="fas fa-star"></i> Leave Review
+						        </a>
+						    </div>
+						    <div th:unless="${@reviewService.canReviewBooking(currentUser, booking.id)}">
+						        <span class="badge bg-success">
+						            <i class="fas fa-check-circle"></i> Review Period Ended
+						        </span>
+						    </div>
+						</div>
+					    
+					    <span class="badge bg-info ms-2">Completed</span>
+					</div>
+            <!-- Cancelled Status -->
                     <div th:if="${booking.status?.name() == 'CANCELLED'}">
                         <button class="btn btn-sm btn-outline-secondary" disabled>
                             <i class="fas fa-ban"></i> Cancelled

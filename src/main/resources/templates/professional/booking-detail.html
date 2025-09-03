@@ -67,32 +67,33 @@
                                     <p><strong>Date:</strong> <span th:text="${#temporals.format(booking.bookingDate, 'MMMM dd, yyyy')}"></span></p>
                                     <p><strong>Time:</strong> <span th:text="${#temporals.format(booking.startTime, 'hh:mm a')} + ' - ' + ${#temporals.format(booking.endTime, 'hh:mm a')}"></span></p>
                                     <p><strong>Status:</strong> 
-                                        <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).PENDING}" class="badge bg-warning">Pending</span>
-                                        <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CONFIRMED}" class="badge bg-success">Confirmed</span>
-                                        <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).COMPLETED}" class="badge bg-info">Completed</span>
-                                        <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CANCELLED}" class="badge bg-secondary">Cancelled</span>
-                                        <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).REJECTED}" class="badge bg-danger">Rejected</span>
+                                        <span th:if="${booking.status == BookingStatus.PENDING}" class="badge bg-warning">Pending</span>
+                                        <span th:if="${booking.status == BookingStatus.CONFIRMED}" class="badge bg-success">Confirmed</span>
+                                        <span th:if="${booking.status == BookingStatus.COMPLETED}" class="badge bg-info">Completed</span>
+                                        <span th:if="${booking.status == BookingStatus.CANCELLED}" class="badge bg-secondary">Cancelled</span>
+                                        <span th:if="${booking.status == BookingStatus.REJECTED}" class="badge bg-danger">Rejected</span>
                                     </p>
                                     <p><strong>Created:</strong> <span th:text="${#temporals.format(booking.createdAt, 'MMM dd, yyyy hh:mm a')}"></span></p>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Service Details -->
-                        <div class="col-md-12 mb-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5><i class="fas fa-clipboard-list"></i> Service Details</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p th:if="${booking.serviceDetails}" th:text="${booking.serviceDetails}"></p>
-                                    <p th:if="${!booking.serviceDetails}" class="text-muted">No additional details provided</p>
-                                </div>
-                            </div>
-                        </div>
+						<!-- Service Details -->
+						<div class="col-md-12 mb-4">
+						    <div class="card">
+						        <div class="card-header">
+						            <h5><i class="fas fa-clipboard-list"></i> Service Details</h5>
+						        </div>
+						        <div class="card-body">
+						            <p th:if="${!#strings.isEmpty(booking.serviceDetails)}" th:text="${booking.serviceDetails}"></p>
+						            <p th:if="${#strings.isEmpty(booking.serviceDetails)}" class="text-muted">No additional details provided</p>
+						        </div>
+						    </div>
+						</div>
+
                         
-                        <!-- Actions -->
-                        <div class="col-md-12" th:if="${booking.status == T(com.marketplace.enums.BookingStatus).PENDING}">
+                        <!-- Actions for Pending Bookings -->
+                        <div class="col-md-12" th:if="${booking.status == BookingStatus.PENDING}">
                             <div class="card">
                                 <div class="card-header">
                                     <h5><i class="fas fa-cogs"></i> Actions</h5>
@@ -118,7 +119,8 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-12" th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CONFIRMED}">
+                        <!-- Actions for Confirmed Bookings -->
+                        <div class="col-md-12" th:if="${booking.status == BookingStatus.CONFIRMED}">
                             <div class="card">
                                 <div class="card-header">
                                     <h5><i class="fas fa-cogs"></i> Actions</h5>

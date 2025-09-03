@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: head}"></head>
+<body>
+<div th:replace="~{fragments/header :: nav}"></div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a th:href="@{/professional/dashboard}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a th:href="@{/professional/profile}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user"></i> My Profile
+                </a>
+                <a th:href="@{/professional/availability}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar"></i> Availability
+                </a>
+                <a th:href="@{/professional/bookings}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Bookings
+                </a>
+                <a th:href="@{/professional/reviews}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-star"></i> Reviews
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-star"></i> My Reviews</h4>
+                    <span class="badge bg-primary fs-6" th:if="${totalReviews > 0}">
+                        <span th:text="${#numbers.formatDecimal(averageRating, 1, 1)}"></span>
+                        <i class="fas fa-star text-warning"></i>
+                        (<span th:text="${totalReviews}"></span> reviews)
+                    </span>
+                    <span class="badge bg-secondary fs-6" th:if="${totalReviews == 0}">
+                        No reviews yet
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" th:text="${message}">
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" th:text="${error}">
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    
+                    <!-- Simple Rating Summary -->
+                    <div class="row mb-4" th:if="${totalReviews > 0}">
+                        <div class="col-md-12">
+                            <div class="text-center p-4 bg-light rounded">
+                                <div class="display-4 fw-bold text-primary" th:text="${#numbers.formatDecimal(averageRating, 1, 1)}"></div>
+                                <div class="mb-2">
+                                    <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                        <i class="fas fa-star" th:classappend="${i <= averageRating ? 'text-warning' : 'text-muted'}"></i>
+                                    </span>
+                                </div>
+                                <div class="text-muted">
+                                    <span th:text="${totalReviews}"></span> total reviews
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviews List -->
+                    <div th:if="${reviews != null and !reviews.empty}">
+                        <h5 class="mb-3">All Reviews</h5>
+                        <div class="row">
+                            <div th:each="review : ${reviews}" class="col-12 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <h6 class="mb-0 me-2" th:text="${review.client?.fullName ?: 'Anonymous Client'}"></h6>
+                                                    <span class="text-muted small" th:if="${review.client?.username}" 
+                                                          th:text="${'@' + review.client.username}"></span>
+                                                    <span class="mx-2 text-muted">•</span>
+                                                    <small class="text-muted" th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}"></small>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                                        <i class="fas fa-star" th:classappend="${i <= review.rating ? 'text-warning' : 'text-muted'}"></i>
+                                                    </span>
+                                                    <span class="ms-2 fw-bold" th:text="${review.rating + '/5'}"></span>
+                                                </div>
+                                                <!-- Fixed comment display logic -->
+                                                <p class="card-text" th:text="${review.comment}" 
+                                                   th:if="${review.comment != null and !#strings.isEmpty(review.comment)}"></p>
+                                                <p class="card-text text-muted fst-italic" 
+                                                   th:if="${review.comment == null or #strings.isEmpty(review.comment)}">No comment provided</p>
+                                            </div>
+                                            <div class="ms-3" th:if="${review.booking}">
+                                                <a th:href="@{/professional/bookings/{id}(id=${review.booking.id})}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-calendar-check"></i> View Booking
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- No Reviews State -->
+                    <div th:if="${reviews == null or reviews.empty}">
+                        <div class="text-center py-5">
+                            <i class="fas fa-star fa-4x text-muted mb-4"></i>
+                            <h4>No Reviews Yet</h4>
+                            <p class="text-muted mb-4">
+                                Once clients complete bookings with you, they can leave reviews.<br>
+                                Keep providing excellent service to earn great ratings!
+                            </p>
+                            <a th:href="@{/professional/bookings}" class="btn btn-primary">
+                                <i class="fas fa-calendar-check"></i> View My Bookings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/header :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

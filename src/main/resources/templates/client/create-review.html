@@ -1,95 +1,206 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments/header :: head}"></head>
+<head th:replace="~{fragments/header :: head}">
+    <title>Leave a Review - Service Platform</title>
+</head>
 <body>
 <div th:replace="~{fragments/header :: nav}"></div>
 
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4><i class="fas fa-star"></i> Leave a Review</h4>
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Leave a Review
+                    </h4>
                 </div>
                 <div class="card-body">
-                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" th:text="${message}">
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <!-- Enhanced Alert Messages -->
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${message}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" th:text="${error}">
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     
-                    <!-- Booking Info -->
-                    <div class="card mb-4">
+                    <!-- Enhanced Booking Info -->
+                    <div class="card mb-4 bg-light border-0">
                         <div class="card-body">
-                            <h5>Booking Details</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Professional:</strong> <span th:text="${booking.professional.user.fullName}"></span></p>
-                                    <p><strong>Service:</strong> <span th:text="${booking.professional.category.name}"></span></p>
+                            <h5 class="card-title text-primary mb-3">
+                                <i class="fas fa-calendar-check me-2"></i>Booking Details
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-user-tie text-primary me-3"></i>
+                                        <div>
+                                            <strong>Professional:</strong><br>
+                                            <span class="text-muted" th:text="${booking.professional.user.fullName}"></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-briefcase text-primary me-3"></i>
+                                        <div>
+                                            <strong>Service:</strong><br>
+                                            <span class="text-muted" th:text="${booking.professional.category.name}"></span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <p><strong>Date:</strong> <span th:text="${#temporals.format(booking.bookingDate, 'MMMM dd, yyyy')}"></span></p>
-                                    <p><strong>Time:</strong> <span th:text="${#temporals.format(booking.startTime, 'hh:mm a')} + ' - ' + ${#temporals.format(booking.endTime, 'hh:mm a')}"></span></p>
+                                <div class="col-sm-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-calendar-alt text-primary me-3"></i>
+                                        <div>
+                                            <strong>Date:</strong><br>
+                                            <span class="text-muted" th:text="${#temporals.format(booking.bookingDate, 'EEEE, MMMM dd, yyyy')}"></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-clock text-primary me-3"></i>
+                                        <div>
+                                            <strong>Time:</strong><br>
+                                            <span class="text-muted" th:text="${#temporals.format(booking.startTime, 'hh:mm a')} + ' - ' + ${#temporals.format(booking.endTime, 'hh:mm a')}"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <form th:action="@{/client/reviews/create}" th:object="${reviewDto}" method="post">
+                    <!-- Enhanced Review Form -->
+                    <form th:action="@{/client/reviews/create}" th:object="${reviewDto}" method="post" novalidate>
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <input type="hidden" th:field="*{professionalId}"/>
                         <input type="hidden" th:field="*{bookingId}"/>
                         
+                        <!-- Improved Rating Section -->
                         <div class="mb-4">
-                            <label class="form-label"><strong>Rating</strong></label>
-                            <div class="rating-stars">
-                                <div class="btn-group" role="group">
-                                    <input type="radio" class="btn-check" name="rating" id="rating1" value="1" th:field="*{rating}" required>
-                                    <label class="btn btn-outline-warning" for="rating1">
-                                        <i class="fas fa-star"></i> 1
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="rating" id="rating2" value="2" th:field="*{rating}">
-                                    <label class="btn btn-outline-warning" for="rating2">
-                                        <i class="fas fa-star"></i> 2
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="rating" id="rating3" value="3" th:field="*{rating}">
-                                    <label class="btn btn-outline-warning" for="rating3">
-                                        <i class="fas fa-star"></i> 3
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="rating" id="rating4" value="4" th:field="*{rating}">
-                                    <label class="btn btn-outline-warning" for="rating4">
-                                        <i class="fas fa-star"></i> 4
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="rating" id="rating5" value="5" th:field="*{rating}">
-                                    <label class="btn btn-outline-warning" for="rating5">
-                                        <i class="fas fa-star"></i> 5
-                                    </label>
+                            <label class="form-label fw-bold fs-5 mb-3">
+                                <i class="fas fa-star-half-alt me-2 text-warning"></i>Rating
+                                <span class="text-danger">*</span>
+                            </label>
+                            
+                            <div class="rating-options">
+                                <div class="row g-2">
+                                    <div class="col-6 col-md-2" th:each="rating : ${#numbers.sequence(1, 5)}">
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="radio" 
+                                                   th:id="'rating' + ${rating}" 
+                                                   th:value="${rating}" 
+                                                   th:field="*{rating}" 
+                                                   required>
+                                            <label class="form-check-label w-100 text-center p-3 border rounded bg-light" 
+                                                   th:for="'rating' + ${rating}"
+                                                   th:classappend="${rating == 5} ? 'border-success' : (${rating >= 4} ? 'border-warning' : (${rating >= 3} ? 'border-info' : 'border-secondary'))">
+                                                <div class="mb-1">
+                                                     <span th:each="star : ${#numbers.sequence(1, 5)}"
+												          th:classappend="${star <= rating} ? 'text-warning' : 'text-muted'">
+												        ★
+												    </span>
+                                                </div>
+                                                <small class="fw-bold" 
+                                                       th:text="${rating == 5} ? 'Excellent' : 
+                                                                (${rating == 4} ? 'Very Good' : 
+                                                                (${rating == 3} ? 'Good' : 
+                                                                (${rating == 2} ? 'Fair' : 'Poor')))">
+                                                </small>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div th:if="${#fields.hasErrors('rating')}" class="text-danger mt-1" th:errors="*{rating}"></div>
+                            </div>
+                            
+                            <div th:if="${#fields.hasErrors('rating')}" class="alert alert-danger mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span th:errors="*{rating}"></span>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="comment" class="form-label"><strong>Your Review</strong></label>
-                            <textarea class="form-control" id="comment" th:field="*{comment}" rows="5" placeholder="Share your experience..." required></textarea>
-                            <div th:if="${#fields.hasErrors('comment')}" class="text-danger" th:errors="*{comment}"></div>
-                            <div class="form-text">Please be respectful and constructive in your feedback.</div>
+                        <!-- Enhanced Comment Section -->
+                        <div class="mb-4">
+                            <label for="comment" class="form-label fw-bold fs-5 mb-3">
+                                <i class="fas fa-comment-dots me-2 text-primary"></i>Your Review
+                                <span class="text-danger">*</span>
+                            </label>
+                            
+                            <div class="mb-3">
+                                <textarea class="form-control form-control-lg" 
+                                          id="comment" 
+                                          th:field="*{comment}" 
+                                          rows="6" 
+                                          placeholder="Please share your detailed experience with this professional service:&#10;&#10;• How was the quality of service?&#10;• Was the professional punctual and courteous?&#10;• Would you recommend this service to others?&#10;• Any specific highlights or areas for improvement?"
+                                          required 
+                                          maxlength="1000"
+                                          th:classappend="${#fields.hasErrors('comment')} ? 'is-invalid' : ''"></textarea>
+                                
+                                <div class="form-text">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="fas fa-info-circle text-primary me-1"></i>
+                                            Please be respectful and constructive in your feedback
+                                        </span>
+                                        <small class="text-muted">Maximum 1,000 characters</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div th:if="${#fields.hasErrors('comment')}" class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span th:errors="*{comment}"></span>
+                            </div>
                         </div>
                         
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane"></i> Submit Review
-                            </button>
-                            <a th:href="@{/client/bookings}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Bookings
-                            </a>
+                        <!-- Review Guidelines -->
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-lightbulb me-2"></i>Review Guidelines
+                            </h6>
+                            <ul class="mb-0 small">
+                                <li>Be honest and fair in your assessment</li>
+                                <li>Focus on the service quality and professionalism</li>
+                                <li>Mention specific aspects like punctuality, communication, and results</li>
+                                <li>Avoid personal attacks or inappropriate language</li>
+                                <li>Your review helps other clients make informed decisions</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Enhanced Form Actions -->
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-auto">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Review
+                                </button>
+                            </div>
+                            <div class="col-12 col-sm-auto">
+                                <button type="reset" class="btn btn-outline-secondary btn-lg w-100">
+                                    <i class="fas fa-undo me-2"></i>Reset Form
+                                </button>
+                            </div>
+                            <div class="col-12 col-sm-auto ms-sm-auto">
+                                <a th:href="@{/client/bookings}" class="btn btn-outline-primary btn-lg w-100">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Bookings
+                                </a>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+            
+            <!-- Additional Information Card -->
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-shield-alt me-2"></i>Your Privacy Matters
+                    </h6>
+                    <p class="small text-muted mb-0">
+                        Your review will be published with your name and will help other clients make informed decisions. 
+                        All reviews are moderated to ensure quality and appropriateness.
+                    </p>
                 </div>
             </div>
         </div>

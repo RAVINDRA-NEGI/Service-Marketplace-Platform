@@ -94,6 +94,7 @@ public class UserBookingController {
             }
             
             model.addAttribute("bookings", bookings);
+            model.addAttribute("currentUser", currentUser); // ADD THIS LINE
             return "client/bookings";
             
         } catch (UnauthorizedAccessException e) {
@@ -101,7 +102,7 @@ public class UserBookingController {
         } catch (BookingException e) {
             logger.error("Error retrieving client bookings", e);
             model.addAttribute("error", e.getMessage());
-            model.addAttribute("bookings", List.of()); // Empty list to avoid null pointer
+            model.addAttribute("bookings", List.of());
             return "client/bookings";
         } catch (Exception e) {
             logger.error("Unexpected error retrieving client bookings", e);

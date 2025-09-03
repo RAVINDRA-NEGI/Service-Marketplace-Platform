@@ -2,6 +2,9 @@ package com.marketplace.controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -15,6 +18,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.marketplace.dto.ReviewDto;
+import com.marketplace.exception.AccessDeniedException;
+import com.marketplace.exception.BookingNotFoundException;
+import com.marketplace.exception.ReviewAlreadyExistsException;
+import com.marketplace.exception.ReviewNotFoundException;
+import com.marketplace.exception.ValidationException;
 import com.marketplace.model.Booking;
 import com.marketplace.model.Review;
 import com.marketplace.model.User;
@@ -27,7 +35,10 @@ import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/client/reviews")
+@PreAuthorize("hasRole('CLIENT')")
 public class ReviewController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReviewController.class);
 
     private final ReviewService reviewService;
     private final BookingService bookingService;
@@ -52,14 +63,11 @@ public class ReviewController {
     @GetMapping("/create/{bookingId}")
     public String showCreateReviewForm(@PathVariable Long bookingId, Model model) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
-
+        
         try {
             // Check if user can review this booking
             if (!reviewService.canReviewBooking(currentUser, bookingId)) {
-                model.addAttribute("error", "You cannot review this booking");
+                model.addAttribute("error", "You cannot review this booking. It may not be completed, already reviewed, or the review window has expired.");
                 return "error";
             }
 
@@ -73,8 +81,18 @@ public class ReviewController {
             model.addAttribute("booking", booking);
             
             return "client/create-review";
+            
+        } catch (BookingNotFoundException e) {
+            logger.warn("Booking not found for ID: {} by user: {}", bookingId, currentUser.getId());
+            model.addAttribute("error", "Booking not found");
+            return "error";
+        } catch (AccessDeniedException e) {
+            logger.warn("Access denied for booking ID: {} by user: {}", bookingId, currentUser.getId());
+            model.addAttribute("error", "Access denied");
+            return "error";
         } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
+            logger.error("Error showing create review form for booking: " + bookingId, e);
+            model.addAttribute("error", "An unexpected error occurred");
             return "error";
         }
     }
@@ -84,21 +102,37 @@ public class ReviewController {
                               BindingResult result,
                               RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
 
         if (result.hasErrors()) {
-            redirectAttributes.addFlashAttribute("error", "Please correct the errors below");
+            redirectAttributes.addFlashAttribute("error", "Please correct the errors and try again");
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.reviewDto", result);
+            redirectAttributes.addFlashAttribute("reviewDto", reviewDto);
             return "redirect:/client/reviews/create/" + reviewDto.getBookingId();
         }
 
         try {
             Review review = reviewService.createReview(currentUser, reviewDto);
             redirectAttributes.addFlashAttribute("message", "Review submitted successfully! Thank you for your feedback.");
+            logger.info("Review created successfully with ID: {} for user: {}", review.getId(), currentUser.getId());
+            return "redirect:/client/bookings";
+            
+        } catch (ReviewAlreadyExistsException e) {
+            logger.warn("Attempted to create duplicate review for booking: {} by user: {}", 
+                       reviewDto.getBookingId(), currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/client/bookings";
+        } catch (ValidationException e) {
+            logger.warn("Validation error creating review: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/client/reviews/create/" + reviewDto.getBookingId();
+        } catch (AccessDeniedException e) {
+            logger.warn("Access denied creating review for booking: {} by user: {}", 
+                       reviewDto.getBookingId(), currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", "Access denied");
             return "redirect:/client/bookings";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            logger.error("Error creating review for booking: " + reviewDto.getBookingId(), e);
+            redirectAttributes.addFlashAttribute("error", "An unexpected error occurred while submitting your review");
             return "redirect:/client/reviews/create/" + reviewDto.getBookingId();
         }
     }
@@ -106,12 +140,14 @@ public class ReviewController {
     @GetMapping("/edit/{id}")
     public String showEditReviewForm(@PathVariable Long id, Model model) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
 
         try {
             Review review = reviewService.getReviewByIdAndClient(id, currentUser);
+            
+            if (!review.canBeEditedBy(currentUser)) {
+                model.addAttribute("error", "This review cannot be edited");
+                return "error";
+            }
             
             ReviewDto reviewDto = new ReviewDto();
             reviewDto.setId(review.getId());
@@ -124,8 +160,18 @@ public class ReviewController {
             model.addAttribute("review", review);
             
             return "client/edit-review";
+            
+        } catch (ReviewNotFoundException e) {
+            logger.warn("Review not found for ID: {} by user: {}", id, currentUser.getId());
+            model.addAttribute("error", "Review not found");
+            return "error";
+        } catch (AccessDeniedException e) {
+            logger.warn("Access denied for review ID: {} by user: {}", id, currentUser.getId());
+            model.addAttribute("error", "Access denied");
+            return "error";
         } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
+            logger.error("Error showing edit review form for ID: " + id, e);
+            model.addAttribute("error", "An unexpected error occurred");
             return "error";
         }
     }
@@ -135,38 +181,57 @@ public class ReviewController {
                               BindingResult result,
                               RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
 
         if (result.hasErrors()) {
-            redirectAttributes.addFlashAttribute("error", "Please correct the errors below");
+            redirectAttributes.addFlashAttribute("error", "Please correct the errors and try again");
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.reviewDto", result);
+            redirectAttributes.addFlashAttribute("reviewDto", reviewDto);
             return "redirect:/client/reviews/edit/" + reviewDto.getId();
         }
 
         try {
             Review review = reviewService.updateReview(reviewDto.getId(), currentUser, reviewDto);
             redirectAttributes.addFlashAttribute("message", "Review updated successfully!");
+            logger.info("Review updated successfully with ID: {} for user: {}", review.getId(), currentUser.getId());
+            return "redirect:/client/bookings";
+            
+        } catch (ReviewNotFoundException e) {
+            logger.warn("Review not found for ID: {} by user: {}", reviewDto.getId(), currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", "Review not found");
+            return "redirect:/client/bookings";
+        } catch (ValidationException e) {
+            logger.warn("Validation error updating review: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/client/reviews/edit/" + reviewDto.getId();
+        } catch (AccessDeniedException e) {
+            logger.warn("Access denied updating review ID: {} by user: {}", reviewDto.getId(), currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", "Access denied");
             return "redirect:/client/bookings";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            logger.error("Error updating review ID: " + reviewDto.getId(), e);
+            redirectAttributes.addFlashAttribute("error", "An unexpected error occurred while updating your review");
             return "redirect:/client/reviews/edit/" + reviewDto.getId();
         }
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteReview(@PathVariable Long id,
-                              RedirectAttributes redirectAttributes) {
+    public String deleteReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
 
         try {
             reviewService.deleteReview(id, currentUser);
             redirectAttributes.addFlashAttribute("message", "Review deleted successfully!");
+            logger.info("Review deleted successfully with ID: {} for user: {}", id, currentUser.getId());
+            
+        } catch (ReviewNotFoundException e) {
+            logger.warn("Review not found for deletion ID: {} by user: {}", id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", "Review not found");
+        } catch (AccessDeniedException e) {
+            logger.warn("Access denied deleting review ID: {} by user: {}", id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("error", "Access denied");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            logger.error("Error deleting review ID: " + id, e);
+            redirectAttributes.addFlashAttribute("error", "An unexpected error occurred while deleting your review");
         }
 
         return "redirect:/client/bookings";
@@ -175,16 +240,16 @@ public class ReviewController {
     @GetMapping("/my-reviews")
     public String listClientReviews(Model model) {
         User currentUser = getCurrentUser();
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
 
         try {
             List<Review> reviews = reviewService.getClientReviews(currentUser);
             model.addAttribute("reviews", reviews);
             return "client/my-reviews";
+            
         } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
+            logger.error("Error listing client reviews for user: " + currentUser.getId(), e);
+            model.addAttribute("error", "An error occurred while loading your reviews");
+            model.addAttribute("reviews", List.of()); // Empty list to prevent template errors
             return "client/my-reviews";
         }
     }

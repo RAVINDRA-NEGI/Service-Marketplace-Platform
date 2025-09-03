@@ -71,11 +71,11 @@
                                             <div th:text="${booking.serviceDetails ?: 'No details'}"></div>
                                         </td>
                                         <td>
-                                            <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).PENDING}" class="badge bg-warning">Pending</span>
-                                            <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CONFIRMED}" class="badge bg-success">Confirmed</span>
-                                            <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).COMPLETED}" class="badge bg-info">Completed</span>
-                                            <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CANCELLED}" class="badge bg-secondary">Cancelled</span>
-                                            <span th:if="${booking.status == T(com.marketplace.enums.BookingStatus).REJECTED}" class="badge bg-danger">Rejected</span>
+                                            <span th:if="${booking.status == BookingStatus.PENDING}" class="badge bg-warning">Pending</span>
+                                            <span th:if="${booking.status == BookingStatus.CONFIRMED}" class="badge bg-success">Confirmed</span>
+                                            <span th:if="${booking.status == BookingStatus.COMPLETED}" class="badge bg-info">Completed</span>
+                                            <span th:if="${booking.status == BookingStatus.CANCELLED}" class="badge bg-secondary">Cancelled</span>
+                                            <span th:if="${booking.status == BookingStatus.REJECTED}" class="badge bg-danger">Rejected</span>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
@@ -83,7 +83,7 @@
                                                    class="btn btn-outline-primary">
                                                     <i class="fas fa-eye"></i> View
                                                 </a>
-                                                <form th:if="${booking.status == T(com.marketplace.enums.BookingStatus).PENDING}" 
+                                                <form th:if="${booking.status == BookingStatus.PENDING}" 
                                                       th:action="@{/professional/bookings/accept/{id}(id=${booking.id})}" 
                                                       method="post" class="d-inline">
                                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -92,7 +92,7 @@
                                                         <i class="fas fa-check"></i> Accept
                                                     </button>
                                                 </form>
-                                                <form th:if="${booking.status == T(com.marketplace.enums.BookingStatus).PENDING}" 
+                                                <form th:if="${booking.status == BookingStatus.PENDING}" 
                                                       th:action="@{/professional/bookings/reject/{id}(id=${booking.id})}" 
                                                       method="post" class="d-inline">
                                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -101,7 +101,7 @@
                                                         <i class="fas fa-times"></i> Reject
                                                     </button>
                                                 </form>
-                                                <form th:if="${booking.status == T(com.marketplace.enums.BookingStatus).CONFIRMED}" 
+                                                <form th:if="${booking.status == BookingStatus.CONFIRMED}" 
                                                       th:action="@{/professional/bookings/complete/{id}(id=${booking.id})}" 
                                                       method="post" class="d-inline">
                                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>

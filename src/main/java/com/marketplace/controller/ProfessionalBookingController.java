@@ -63,9 +63,14 @@ public class ProfessionalBookingController {
             }
             
             model.addAttribute("bookings", bookings);
+            // Add this line to make BookingStatus enum available in Thymeleaf
+            model.addAttribute("BookingStatus", BookingStatus.class);
+            
             return "professional/bookings";
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
+            // Add BookingStatus even when there's an error to avoid template issues
+            model.addAttribute("BookingStatus", BookingStatus.class);
             return "professional/bookings";
         }
     }
@@ -85,6 +90,8 @@ public class ProfessionalBookingController {
             
             Booking booking = bookingService.getBookingById(id);
             model.addAttribute("booking", booking);
+            // Add BookingStatus for the detail view as well if needed
+            model.addAttribute("BookingStatus", BookingStatus.class);
             return "professional/booking-detail";
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
