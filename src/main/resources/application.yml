@@ -17,6 +17,15 @@ spring:
        dialect: org.hibernate.dialect.MySQL8Dialect 
   transaction:
     default-timeout: 30
+  servlet:
+    multipart:
+      max-request-size:
+        5MB
+      max-file-size:
+        5MB
+app:
+  upload:
+    dir: uploads/
 logging:
   level:
    com:

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: head}"></head>
+<body>
+<div th:replace="~{fragments/header :: nav}"></div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a th:href="@{/client/dashboard}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a th:href="@{/client/bookings}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> My Bookings
+                </a>
+                <a th:href="@{/client/profile}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-user"></i> My Profile
+                </a>
+                <a th:href="@{/client/profile/edit}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-user-circle"></i> My Profile</h4>
+                    <div>
+                        <span th:if="${profile.isProfileComplete}" class="badge bg-success me-2">
+                            <i class="fas fa-check"></i> Complete
+                        </span>
+                        <span th:if="${!profile.isProfileComplete}" class="badge bg-warning me-2">
+                            <i class="fas fa-exclamation-triangle"></i> Incomplete
+                        </span>
+                        <a th:href="@{/client/profile/edit}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" th:text="${message}">
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" th:text="${error}">
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    
+                    <!-- Profile Incomplete Alert -->
+                    <div th:if="${!profile.isProfileComplete}" class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Complete Your Profile</h6>
+                        <p class="mb-2">Your profile is missing some information. Complete it to get better matches!</p>
+                        <a th:href="@{/client/profile/edit}" class="btn btn-sm btn-primary">Complete Now</a>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            <!-- Profile Photo -->
+                            <div th:if="${profile.profilePhotoUrl != null and !#strings.isEmpty(profile.profilePhotoUrl)}">
+                                <img th:src="${profile.profilePhotoUrl}" 
+                                     class="img-fluid rounded-circle mb-3" 
+                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                     alt="Profile Photo"
+                                     onerror="this.style.display='none'; document.getElementById('photoPlaceholder').style.display='flex';">
+                            </div>
+                            <!-- Placeholder if no photo -->
+                            <div th:if="${profile.profilePhotoUrl == null or #strings.isEmpty(profile.profilePhotoUrl)}"
+                                 id="photoPlaceholder" 
+                                 class="bg-light rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                                 style="width: 150px; height: 150px;">
+                                <i class="fas fa-user fa-3x text-muted"></i>
+                            </div>
+                            
+                            <!-- Name and Username -->
+                            <h5 th:text="${profile.fullName ?: 'Name not set'}"></h5>
+                            <p class="text-muted">
+                                <i class="fas fa-at"></i> 
+                                <span th:text="${profile.user.username ?: 'N/A'}"></span>
+                            </p>
+                            
+                            <!-- Add Photo Button -->
+                            <div th:if="${profile.profilePhotoUrl == null or #strings.isEmpty(profile.profilePhotoUrl)}">
+                                <a th:href="@{/client/profile/edit}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-camera"></i> Add Photo
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <!-- Contact Information -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-address-card"></i> Contact Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-3"><strong>Email:</strong></div>
+                                        <div class="col-sm-9">
+                                            <span th:if="${profile.email != null and !#strings.isEmpty(profile.email)}" th:text="${profile.email}"></span>
+                                            <span th:if="${profile.email == null or #strings.isEmpty(profile.email)}" class="text-muted">Not provided</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-sm-3"><strong>Phone:</strong></div>
+                                        <div class="col-sm-9">
+                                            <span th:if="${profile.phoneNumber != null and !#strings.isEmpty(profile.phoneNumber)}" 
+                                                  th:text="${profile.phoneNumber}"></span>
+                                            <span th:if="${profile.phoneNumber == null or #strings.isEmpty(profile.phoneNumber)}" 
+                                                  class="text-muted">Not provided</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-sm-3"><strong>Location:</strong></div>
+                                        <div class="col-sm-9">
+                                            <span th:if="${profile.city != null and !#strings.isEmpty(profile.city)}" 
+                                                  th:text="${profile.city}"></span>
+                                            <span th:if="${profile.state != null and !#strings.isEmpty(profile.state)}" 
+                                                  th:text="${', ' + profile.state}"></span>
+                                            <span th:if="${(profile.city == null or #strings.isEmpty(profile.city)) and (profile.state == null or #strings.isEmpty(profile.state))}" 
+                                                  class="text-muted">Not provided</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-0">
+                                        <div class="col-sm-3"><strong>Address:</strong></div>
+                                        <div class="col-sm-9">
+                                            <span th:if="${profile.address != null and !#strings.isEmpty(profile.address)}" 
+                                                  th:text="${profile.address}"></span>
+                                            <span th:if="${profile.address == null or #strings.isEmpty(profile.address)}" 
+                                                  class="text-muted">Not provided</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- About Me -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> About Me</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div th:if="${profile.bio != null and !#strings.isEmpty(profile.bio)}">
+                                        <p th:text="${profile.bio}" class="mb-0"></p>
+                                    </div>
+                                    <div th:if="${profile.bio == null or #strings.isEmpty(profile.bio)}">
+                                        <p class="text-muted mb-0">No bio provided</p>
+                                        <small class="text-muted">
+                                            <a th:href="@{/client/profile/edit}" class="text-decoration-none">Add a bio</a> to tell others about yourself
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Account Information -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Account Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-3"><strong>Member Since:</strong></div>
+                                        <div class="col-sm-9" th:text="${#temporals.format(profile.createdAt, 'MMMM dd, yyyy')}"></div>
+                                    </div>
+                                    
+                                    <div class="row mb-0">
+                                        <div class="col-sm-3"><strong>Last Updated:</strong></div>
+                                        <div class="col-sm-9" th:text="${#temporals.format(profile.updatedAt, 'MMMM dd, yyyy')}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/header :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
