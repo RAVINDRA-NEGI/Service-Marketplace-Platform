@@ -74,6 +74,7 @@
                                           class="text-muted">No reviews yet</span>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>
                     
@@ -90,22 +91,100 @@
                         <p th:text="${profile.bio ?: 'No bio available'}"></p>
                     </div>
                     
+                    <!-- Reviews Section -->
+                    <div th:if="${profile != null}" class="mb-4">
+                        <!-- Reviews List -->
+                        <div th:if="${reviews != null and !reviews.empty}">
+                            <h5 class="mb-3">
+                                <i class="fas fa-star text-warning"></i> Client Reviews
+                                <span class="badge bg-primary ms-2" th:text="${reviews.size()}"></span>
+                            </h5>
+                            <div class="row">
+                                <div th:each="review, iterStat : ${reviews}" 
+                                     th:class="'col-12 mb-3' + ${iterStat.index >= 3 ? ' collapse' : ''}"
+                                     th:id="${iterStat.index >= 3 ? 'moreReviews' : null}">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <h6 class="mb-0 me-2" th:text="${review.client?.fullName ?: 'Anonymous Client'}"></h6>
+                                                        <span class="text-muted small" th:if="${review.client?.username}" 
+                                                              th:text="${'@' + review.client.username}"></span>
+                                                        <span class="mx-2 text-muted">•</span>
+                                                        <small class="text-muted" th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}"></small>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                                            <i class="fas fa-star" th:classappend="${i <= review.rating ? 'text-warning' : 'text-muted'}"></i>
+                                                        </span>
+                                                        <span class="ms-2 fw-bold" th:text="${review.rating + '/5'}"></span>
+                                                    </div>
+                                                    <!-- Comment display -->
+                                                    <p class="card-text" th:text="${review.comment}" 
+                                                       th:if="${review.comment != null and !#strings.isEmpty(review.comment)}"></p>
+                                                    <p class="card-text text-muted fst-italic" 
+                                                       th:if="${review.comment == null or #strings.isEmpty(review.comment)}">No comment provided</p>
+                                                </div>
+                                                <div class="ms-3" th:if="${review.booking}">
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-calendar-check"></i> 
+                                                        <span th:text="${#temporals.format(review.booking.bookingDate, 'MMM dd, yyyy')}"></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Show More/Less Button (if more than 3 reviews) -->
+                            <div th:if="${reviews.size() > 3}" class="text-center mt-3">
+                                <button class="btn btn-outline-primary btn-sm" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#moreReviews" 
+                                        id="toggleReviews"
+                                        aria-expanded="false">
+                                    <i class="fas fa-chevron-down"></i> Show More Reviews
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- No Reviews State -->
+                        <div th:if="${reviews == null or reviews.empty}">
+                            <div class="text-center py-5">
+                                <i class="fas fa-star fa-4x text-muted mb-4"></i>
+                                <h4>No Reviews Yet</h4>
+                                <p class="text-muted mb-4">
+                                    This professional hasn't received any reviews yet.<br>
+                                    Be the first to book a service and share your experience!
+                                </p>
+                                <a th:if="${availableSlots != null and !availableSlots.empty}" 
+                                   href="#availability" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-calendar-plus"></i> Book Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Certificates -->
-					<div th:if="${profile != null and profile.hasCertificates()}" class="mb-4">
-					    <h5>Certifications</h5>
-					    <div class="list-group">
-					        <th:block th:each="url : ${profile.certificatesList}">
-					            <a th:href="${url}" target="_blank" class="list-group-item list-group-item-action">
-					                <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
-					                <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
-					                <span th:text="${url.substring(url.lastIndexOf('/') + 1)}"></span>
-					            </a>
-					        </th:block>
-					    </div>
-					</div>
+                    <div th:if="${profile != null and profile.hasCertificates()}" class="mb-4">
+                        <h5>Certifications</h5>
+                        <div class="list-group">
+                            <th:block th:each="url : ${profile.certificatesList}">
+                                <a th:href="${url}" target="_blank" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-file-pdf" th:if="${#strings.endsWith(url, '.pdf')}"></i>
+                                    <i class="fas fa-image" th:if="${!#strings.endsWith(url, '.pdf')}"></i>
+                                    <span th:text="${url.substring(url.lastIndexOf('/') + 1)}"></span>
+                                </a>
+                            </th:block>
+                        </div>
+                    </div>
                     
                     <!-- Availability Calendar -->
-                    <div th:if="${profile != null}" class="mb-4">
+                    <div th:if="${profile != null}" class="mb-4" id="availability">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5><i class="fas fa-calendar-alt"></i> Available Time Slots</h5>
                             <div>
@@ -180,43 +259,28 @@
 
 <div th:replace="~{fragments/header :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/pro-dtl.js}"></script>
 
+<!-- Script for Show More/Less Reviews Toggle -->
 <script>
-// Enhanced image error handling
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle profile image loading errors
-    const profileImg = document.querySelector('img[alt="Profile Photo"]');
-    if (profileImg) {
-        profileImg.addEventListener('error', function() {
-            const fallbackDiv = this.nextElementSibling;
-            if (fallbackDiv && fallbackDiv.classList.contains('position-absolute')) {
-                this.style.display = 'none';
-                fallbackDiv.style.display = 'flex';
-            }
-        });
+    const toggleButton = document.getElementById('toggleReviews');
+    if (toggleButton) {
+        const moreReviews = document.getElementById('moreReviews');
         
-        profileImg.addEventListener('load', function() {
-            const fallbackDiv = this.nextElementSibling;
-            if (fallbackDiv && fallbackDiv.classList.contains('position-absolute')) {
-                fallbackDiv.style.display = 'none';
+        toggleButton.addEventListener('click', function() {
+            const isExpanded = moreReviews.classList.contains('show');
+            const icon = this.querySelector('i');
+            
+            if (isExpanded) {
+                icon.className = 'fas fa-chevron-down';
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> Show More Reviews';
+            } else {
+                icon.className = 'fas fa-chevron-up';
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> Show Less Reviews';
             }
         });
     }
-    
-    // Form validation before submission
-    const bookingForms = document.querySelectorAll('form[action*="/client/bookings/create"]');
-    bookingForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const professionalId = form.querySelector('input[name="professionalId"]');
-            const availabilityId = form.querySelector('input[name="availabilityId"]');
-            
-            if (!professionalId || !professionalId.value || !availabilityId || !availabilityId.value) {
-                e.preventDefault();
-                alert('Missing required booking information. Please try again.');
-                return false;
-            }
-        });
-    });
 });
 </script>
 </body>

@@ -24,10 +24,12 @@ import com.marketplace.exception.ProfessionalNotFoundException;
 import com.marketplace.exception.UnauthorizedAccessException;
 import com.marketplace.model.Availability;
 import com.marketplace.model.ProfessionalProfile;
+import com.marketplace.model.Review;
 import com.marketplace.model.User;
 import com.marketplace.security.service.UserDetailsImpl;
 import com.marketplace.service.AvailabilityService;
 import com.marketplace.service.ProfessionalService;
+import com.marketplace.service.ReviewService;
 import com.marketplace.service.UserService;
 
 @Controller
@@ -39,11 +41,13 @@ public class BrowseController {
     private final ProfessionalService professionalService;
     private final UserService userService;
     private final AvailabilityService availabilityService;
+    private final ReviewService reviewService;
     
-    public BrowseController(ProfessionalService professionalService, UserService userService, AvailabilityService availabilityService) {
+    public BrowseController(ProfessionalService professionalService, UserService userService, AvailabilityService availabilityService ,ReviewService reviewService) {
         this.professionalService = professionalService;
         this.userService = userService;
         this.availabilityService = availabilityService;
+        this.reviewService = reviewService;
     }
 
     // Helper method to get current user
@@ -116,7 +120,7 @@ public class BrowseController {
             }
 
             ProfessionalProfile profile = professionalService.getProfileById(id);
-            
+            List<Review> reviews = reviewService.getProfessionalReviews(profile);
             // Handle date selection with validation
             LocalDate selectedDate;
             try {
@@ -143,6 +147,7 @@ public class BrowseController {
                 availabilityService.getAvailableSlots(profile.getUser(), selectedDate, endDate);
             
             model.addAttribute("profile", profile);
+            model.addAttribute("reviews", reviews);
             model.addAttribute("selectedDate", selectedDate);
             model.addAttribute("availableSlots", availableSlots);
             model.addAttribute("weekOffset", weekOffset);
