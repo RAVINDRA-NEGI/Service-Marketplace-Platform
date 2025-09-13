@@ -23,6 +23,10 @@ spring:
         5MB
       max-file-size:
         5MB
+      enabled:
+        true
+      
+     
 app:
   upload:
     dir: uploads/
