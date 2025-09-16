@@ -102,9 +102,8 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingException("This availability slot does not belong to the selected professional");
         }
 
-        // Validate that the booking is for a future time
-        LocalDateTime slotDateTime = LocalDateTime.of(availability.getDate(), availability.getStartTime());
-        if (slotDateTime.isBefore(LocalDateTime.now())) {
+        LocalDateTime slotEndDateTime = LocalDateTime.of(availability.getDate(), availability.getEndTime());
+        if (slotEndDateTime.isBefore(LocalDateTime.now()) || slotEndDateTime.isEqual(LocalDateTime.now())) {
             throw new BookingException("Cannot book past time slots");
         }
 

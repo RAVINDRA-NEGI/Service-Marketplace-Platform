@@ -1,6 +1,7 @@
 package com.marketplace.controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,12 +41,23 @@ public class AvailabilityController {
 
     // Helper method to get current user
     private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof UserDetailsImpl) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || 
+                !(auth.getPrincipal() instanceof UserDetailsImpl)) {
+                return null;
+            }
+            
             UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+            if (userDetails.getId() == null) {
+                return null;
+            }
+            
             return userService.findById(userDetails.getId()).orElse(null);
+        } catch (Exception e) {
+            // Log the error if you have logging
+            return null;
         }
-        return null;
     }
 
     @GetMapping
@@ -77,8 +89,23 @@ public class AvailabilityController {
             model.addAttribute("availabilityDto", new AvailabilityDto());
             
             return "professional/availability-management";
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", "Invalid date format. Please select a valid date.");
+            model.addAttribute("selectedDate", LocalDate.now());
+            model.addAttribute("availabilities", new ArrayList<>());
+            model.addAttribute("allAvailabilities", new ArrayList<>());
+            model.addAttribute("futureAvailabilities", new ArrayList<>());
+            model.addAttribute("hasFutureAvailabilities", false);
+            model.addAttribute("availabilityDto", new AvailabilityDto());
+            return "professional/availability-management";
         } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
+            model.addAttribute("error", "An error occurred while loading availability data.");
+            model.addAttribute("selectedDate", LocalDate.now());
+            model.addAttribute("availabilities", new ArrayList<>());
+            model.addAttribute("allAvailabilities", new ArrayList<>());
+            model.addAttribute("futureAvailabilities", new ArrayList<>());
+            model.addAttribute("hasFutureAvailabilities", false);
+            model.addAttribute("availabilityDto", new AvailabilityDto());
             return "professional/availability-management";
         }
     }
@@ -91,20 +118,37 @@ public class AvailabilityController {
         
         User currentUser = getCurrentUser();
         if (currentUser == null) {
+            redirectAttributes.addFlashAttribute("error", "Please log in to continue");
             return "redirect:/login";
         }
 
+        // Basic time validation
+        if (availabilityDto.getStartTime() != null && availabilityDto.getEndTime() != null &&
+            !availabilityDto.getStartTime().isBefore(availabilityDto.getEndTime())) {
+            result.rejectValue("endTime", "error.endTime", "End time must be after start time");
+        }
+
         if (result.hasErrors()) {
+            // Preserve form data and show errors on the same page
             model.addAttribute("error", "Please correct the errors below");
-            return showAvailabilityManagement(null, model);
+            model.addAttribute("availabilityDto", availabilityDto);
+            model.addAttribute("validationErrors", result);
+            return showAvailabilityManagement(availabilityDto.getDate() != null ? 
+                                            availabilityDto.getDate().toString() : null, model);
         }
 
         try {
-            Availability availability = availabilityService.createAvailability(currentUser, availabilityDto);
+            availabilityService.createAvailability(currentUser, availabilityDto);
             redirectAttributes.addFlashAttribute("message", "Availability slot added successfully!");
             return "redirect:/professional/availability?date=" + availabilityDto.getDate();
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", "Invalid input: " + e.getMessage());
+            return "redirect:/professional/availability?date=" + availabilityDto.getDate();
+        } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/professional/availability?date=" + availabilityDto.getDate();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "An error occurred while adding availability");
             return "redirect:/professional/availability?date=" + availabilityDto.getDate();
         }
     }
@@ -116,7 +160,20 @@ public class AvailabilityController {
         
         User currentUser = getCurrentUser();
         if (currentUser == null) {
+            redirectAttributes.addFlashAttribute("error", "Please log in to continue");
             return "redirect:/login";
+        }
+
+        // Basic validation for bulk fields
+        if (availabilityDto.getBulkStartTime() != null && availabilityDto.getBulkEndTime() != null &&
+            !availabilityDto.getBulkStartTime().isBefore(availabilityDto.getBulkEndTime())) {
+            redirectAttributes.addFlashAttribute("error", "End time must be after start time");
+            return "redirect:/professional/availability";
+        }
+
+        if (availabilityDto.getDates() == null || availabilityDto.getDates().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Please select dates for bulk availability");
+            return "redirect:/professional/availability";
         }
 
         try {
@@ -124,8 +181,14 @@ public class AvailabilityController {
             redirectAttributes.addFlashAttribute("message", 
                 "Bulk availability added successfully! " + availabilities.size() + " slots created.");
             return "redirect:/professional/availability";
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", "Invalid input: " + e.getMessage());
+            return "redirect:/professional/availability";
+        } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/professional/availability";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "An error occurred while adding bulk availability");
             return "redirect:/professional/availability";
         }
     }
@@ -167,8 +230,12 @@ public class AvailabilityController {
             LocalDate localDate = LocalDate.parse(date);
             availabilityService.deleteAvailabilityByDate(currentUser, localDate);
             redirectAttributes.addFlashAttribute("message", "All availability slots for " + date + " deleted successfully!");
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", "Invalid date format");
+        } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "An error occurred while deleting availability slots");
         }
 
         return "redirect:/professional/availability";
