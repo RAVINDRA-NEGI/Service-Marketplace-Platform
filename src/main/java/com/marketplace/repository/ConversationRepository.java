@@ -19,29 +19,39 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     Optional<Conversation> findByClientAndProfessional(User client, ProfessionalProfile professional);
     
     // Find conversations for a client
-    @Query("SELECT c FROM Conversation c WHERE c.client = :client ORDER BY c.updatedAt DESC")
-    List<Conversation> findByClientOrderByUpdatedAtDesc(@Param("client") User client);
+    List<Conversation> findByClientOrderByLastMessageSentAtDesc(User client);
     
     // Find conversations for a professional
-    @Query("SELECT c FROM Conversation c WHERE c.professional.user = :user ORDER BY c.updatedAt DESC")
-    List<Conversation> findByProfessional_UserOrderByUpdatedAtDesc(@Param("user") User user);
+    List<Conversation> findByProfessionalUserOrderByLastMessageSentAtDesc(User professional);
     
     // Find active conversations for a client
-    @Query("SELECT c FROM Conversation c WHERE c.client = :client AND c.isActive = true ORDER BY c.updatedAt DESC")
-    List<Conversation> findActiveByClientOrderByUpdatedAtDesc(@Param("client") User client);
+    List<Conversation> findByClientAndIsActiveTrueOrderByLastMessageSentAtDesc(User client);
     
     // Find active conversations for a professional
-    @Query("SELECT c FROM Conversation c WHERE c.professional.user = :user AND c.isActive = true ORDER BY c.updatedAt DESC")
-    List<Conversation> findActiveByProfessional_UserOrderByUpdatedAtDesc(@Param("user") User user);
+    List<Conversation> findByProfessionalUserAndIsActiveTrueOrderByLastMessageSentAtDesc(User professional);
     
-    // Count unread messages for client
-    @Query("SELECT SUM(c.unreadCountClient) FROM Conversation c WHERE c.client = :client AND c.isActive = true")
-    Integer countUnreadMessagesForClient(@Param("client") User client);
+    // Find conversations with unread messages for client
+    @Query("SELECT c FROM Conversation c WHERE c.client = :user AND c.unreadCountClient > 0")
+    List<Conversation> findConversationsWithUnreadForClient(@Param("user") User user);
     
-    // Count unread messages for professional
-    @Query("SELECT SUM(c.unreadCountProfessional) FROM Conversation c WHERE c.professional.user = :user AND c.isActive = true")
-    Integer countUnreadMessagesForProfessional(@Param("user") User user);
+    // Find conversations with unread messages for professional
+    @Query("SELECT c FROM Conversation c WHERE c.professional.user = :user AND c.unreadCountProfessional > 0")
+    List<Conversation> findConversationsWithUnreadForProfessional(@Param("user") User user);
     
-    // Check if conversation exists between client and professional
-    boolean existsByClientAndProfessional(User client, ProfessionalProfile professional);
+    // Find conversation by booking
+    Optional<Conversation> findByBookingId(Long bookingId);
+    
+    // Count unread messages for a user in a conversation
+    @Query("SELECT c.unreadCountClient FROM Conversation c WHERE c.id = :conversationId AND c.professional.user = :user")
+    Integer countUnreadForProfessional(@Param("conversationId") Long conversationId, @Param("user") User user);
+    
+    @Query("SELECT c.unreadCountProfessional FROM Conversation c WHERE c.id = :conversationId AND c.client = :user")
+    Integer countUnreadForClient(@Param("conversationId") Long conversationId, @Param("user") User user);
+    
+    // Update unread count
+    @Query("UPDATE Conversation c SET c.unreadCountClient = 0 WHERE c.id = :conversationId AND c.professional.user = :user")
+    void resetUnreadCountForProfessional(@Param("conversationId") Long conversationId, @Param("user") User user);
+    
+    @Query("UPDATE Conversation c SET c.unreadCountProfessional = 0 WHERE c.id = :conversationId AND c.client = :user")
+    void resetUnreadCountForClient(@Param("conversationId") Long conversationId, @Param("user") User user);
 }

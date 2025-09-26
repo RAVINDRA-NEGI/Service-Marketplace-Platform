@@ -11,11 +11,21 @@ import com.marketplace.model.MessageFile;
 @Repository
 public interface MessageFileRepository extends JpaRepository<MessageFile, Long> {
     
+    // Find files by message
     List<MessageFile> findByMessage(Message message);
     
-    List<MessageFile> findByMessageIn(List<Message> messages);
+    // Find files by message ID
+    List<MessageFile> findByMessageId(Long messageId);
     
+    // Find files by file type
+    List<MessageFile> findByFileType(String fileType);
+    
+    // Count files by message
+    long countByMessage(Message message);
+    
+    // Delete files by message
     void deleteByMessage(Message message);
     
-    void deleteByMessageIn(List<Message> messages);
+    // Delete files by message ID
+    void deleteByMessageId(Long messageId);
 }

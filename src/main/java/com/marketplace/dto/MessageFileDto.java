@@ -1,7 +1,5 @@
 package com.marketplace.dto;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,15 +10,12 @@ import lombok.NoArgsConstructor;
 public class MessageFileDto {
 
     private Long id;
-    
-    private String fileName;
-    
+    private String originalFilename;
+    private String storedFilename;
     private String fileUrl;
-    
     private Long fileSize;
-    
     private String contentType;
-    
-    // For upload
-    private MultipartFile file;
+    private String fileType;
+    private String iconClass; // CSS class for file type icon
+    private String thumbnailUrl; // For images
 }

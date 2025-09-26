@@ -50,7 +50,8 @@ public class SecurityConfig {
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         )
         .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/login", "/register/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/error").permitAll()
+                .requestMatchers("/", "/login", "/register/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/error", 
+                        "/ws/**", "/error").permitAll()
                 .requestMatchers("/client/**").hasRole("CLIENT")
                 .requestMatchers("/professional/**").hasRole("PROFESSIONAL")
                 .anyRequest().authenticated()
@@ -68,6 +69,11 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID") 
                 .permitAll()
         );
+        http.authorizeRequests()
+        .requestMatchers("/ws/**").authenticated();
+
+    
+    http.headers().frameOptions().disable();
 
         http.authenticationProvider(authenticationProvider());
         return http.build();

@@ -3,6 +3,7 @@ package com.marketplace.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.marketplace.enums.MessageStatus;
 import com.marketplace.enums.MessageType;
 
 import lombok.AllArgsConstructor;
@@ -15,20 +16,17 @@ import lombok.NoArgsConstructor;
 public class MessageDto {
 
     private Long id;
-    
     private Long conversationId;
-    
     private Long senderId;
-    
     private String senderName;
-    
+    private String senderAvatarUrl;
     private String content;
-    
-    private MessageType messageType = MessageType.TEXT;
-    
-    private List<MessageFileDto> files;
-    
+    private MessageType messageType;
+    private MessageStatus messageStatus;
     private LocalDateTime createdAt;
-    
-    private boolean isRead;
+    private LocalDateTime deliveredAt;
+    private LocalDateTime readAt;
+    private List<MessageFileDto> files;
+    private Boolean isFromCurrentUser;
+    private String dateSeparator; // For grouping messages by date
 }

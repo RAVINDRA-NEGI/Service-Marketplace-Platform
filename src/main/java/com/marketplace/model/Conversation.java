@@ -1,21 +1,19 @@
 package com.marketplace.model;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-import jakarta.persistence.CascadeType;
+import com.marketplace.enums.MessageType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -25,16 +23,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
-@Table(name = "conversations", 
-       uniqueConstraints = @UniqueConstraint(
-           columnNames = {"client_id", "professional_id"},
-           name = "uk_client_professional"
-       ),
-       indexes = {
-           @Index(name = "idx_conversation_client", columnList = "client_id"),
-           @Index(name = "idx_conversation_professional", columnList = "professional_id"),
-           @Index(name = "idx_conversation_booking", columnList = "booking_id")
-       })
+@Table(name = "conversations",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"client_id", "professional_id"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -59,10 +49,15 @@ public class Conversation {
     @ToString.Exclude
     private Booking booking;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "last_message_id")
-    @ToString.Exclude
-    private Message lastMessage;
+    @Column(name = "last_message_content", length = 1000)
+    private String lastMessageContent;
+
+    @Column(name = "last_message_type")
+    @Enumerated(EnumType.STRING)
+    private MessageType lastMessageType;
+
+    @Column(name = "last_message_sent_at")
+    private LocalDateTime lastMessageSentAt;
 
     @Column(name = "unread_count_client")
     private Integer unreadCountClient = 0;
@@ -70,33 +65,49 @@ public class Conversation {
     @Column(name = "unread_count_professional")
     private Integer unreadCountProfessional = 0;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "is_closed")
+    private Boolean isClosed = false;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
-
-    @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @ToString.Exclude
-    private List<Message> messages = new ArrayList<>();
 
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
 
-    // Constructor
+    // Constructor for creating conversation without booking
     public Conversation(User client, ProfessionalProfile professional) {
         this.client = client;
         this.professional = professional;
     }
 
+    // Constructor for creating conversation with booking
     public Conversation(User client, ProfessionalProfile professional, Booking booking) {
-        this.client = client;
-        this.professional = professional;
+        this(client, professional);
         this.booking = booking;
+    }
+
+    // Helper methods for unread counts
+    public void incrementUnreadCount(User user) {
+        if (user.getId().equals(client.getId())) {
+            this.unreadCountProfessional++;
+        } else if (user.getId().equals(professional.getUser().getId())) {
+            this.unreadCountClient++;
+        }
+    }
+
+    public void resetUnreadCount(User user) {
+        if (user.getId().equals(client.getId())) {
+            this.unreadCountClient = 0;
+        } else if (user.getId().equals(professional.getUser().getId())) {
+            this.unreadCountProfessional = 0;
+        }
     }
 }
