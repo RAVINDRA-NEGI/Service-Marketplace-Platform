@@ -9,7 +9,8 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 
-import com.marketplace.service.WebSocketMessageService;
+import com.marketplace.dto.OnlineStatusMessage;
+import com.marketplace.service.impl.WebSocketMessageService;
 
 @Component
 public class WebSocketConnectHandler {
