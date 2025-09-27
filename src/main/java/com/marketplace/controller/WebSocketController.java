@@ -15,6 +15,7 @@ import com.marketplace.model.Message;
 import com.marketplace.model.User;
 import com.marketplace.service.ConversationService;
 import com.marketplace.service.impl.WebSocketMessageService;
+import com.marketplace.util.MessagingConstants;
 
 @Controller
 public class WebSocketController {
@@ -34,22 +35,22 @@ public class WebSocketController {
                            SimpMessageHeaderAccessor headerAccessor) {
         
         try {
-            // Get current user
-            User currentUser = webSocketMessageService.getCurrentUser();
+            // Get current user from session
+            User currentUser = getCurrentUserFromSession(headerAccessor);
             if (currentUser == null) {
+                sendErrorToUser(headerAccessor, "Authentication required");
                 return;
             }
 
             // Validate conversation access
             Conversation conversation = conversationService.getConversationByIdAndUser(conversationId, currentUser);
             if (conversation == null) {
+                sendErrorToUser(headerAccessor, MessagingConstants.ERROR_ACCESS_DENIED);
                 return;
             }
 
             // Process and save message
             Message savedMessage = conversationService.processSendMessage(sendMessageDto, currentUser, conversation);
-
-            // Convert to DTO and send via WebSocket
             MessageDto messageDto = conversationService.convertToMessageDto(savedMessage, currentUser);
 
             // Send to conversation topic
@@ -63,12 +64,7 @@ public class WebSocketController {
             );
 
         } catch (Exception e) {
-            // Handle error
-            messagingTemplate.convertAndSendToUser(
-                headerAccessor.getSessionId(),
-                "/queue/errors",
-                "Error sending message: " + e.getMessage()
-            );
+            sendErrorToUser(headerAccessor, "Error sending message: " + e.getMessage());
         }
     }
 
@@ -77,7 +73,7 @@ public class WebSocketController {
                                    @Payload boolean isTyping,
                                    SimpMessageHeaderAccessor headerAccessor) {
         
-        User currentUser = webSocketMessageService.getCurrentUser();
+        User currentUser = getCurrentUserFromSession(headerAccessor);
         if (currentUser != null) {
             webSocketMessageService.sendTypingIndicator(
                 conversationId, 
@@ -92,9 +88,27 @@ public class WebSocketController {
                           @DestinationVariable Long messageId,
                           SimpMessageHeaderAccessor headerAccessor) {
         
-        User currentUser = webSocketMessageService.getCurrentUser();
+        User currentUser = getCurrentUserFromSession(headerAccessor);
         if (currentUser != null) {
             webSocketMessageService.markMessageAsRead(messageId, conversationId, currentUser);
         }
+    }
+
+    // Send error to user
+    private void sendErrorToUser(SimpMessageHeaderAccessor headerAccessor, String errorMessage) {
+        messagingTemplate.convertAndSendToUser(
+            headerAccessor.getSessionId(),
+            MessagingConstants.WS_USER_QUEUE_ERRORS,
+            errorMessage
+        );
+    }
+
+    // Get current user from WebSocket session
+    private User getCurrentUserFromSession(SimpMessageHeaderAccessor headerAccessor) {
+        Object user = headerAccessor.getUser();
+        if (user instanceof org.springframework.security.core.Authentication) {
+            return (User) ((org.springframework.security.core.Authentication) user).getPrincipal();
+        }
+        return null;
     }
 }
