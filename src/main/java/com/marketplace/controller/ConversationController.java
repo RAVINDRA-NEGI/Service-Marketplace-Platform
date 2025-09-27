@@ -16,9 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.marketplace.dto.ConversationDto;
+import com.marketplace.model.ClientProfile;
 import com.marketplace.model.Conversation;
+import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
+import com.marketplace.service.ClientProfileService;
 import com.marketplace.service.ConversationService;
+import com.marketplace.service.ProfessionalService;
 import com.marketplace.util.MessagingConstants;
 
 @RestController
@@ -27,6 +31,12 @@ public class ConversationController {
 
     @Autowired
     private ConversationService conversationService;
+    
+    @Autowired
+    private ClientProfileService clientProfileService;
+    
+    @Autowired
+    private ProfessionalService professionalProfileService;
 
     // Get all conversations for current user
     @GetMapping
@@ -43,7 +53,20 @@ public class ConversationController {
             }
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<ConversationDto> conversations = conversationService.getConversationsByUser(currentUser, status, pageable);
+            Page<ConversationDto> conversations;
+            
+            // Determine if user is client or professional and call appropriate method
+            ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+            if (clientProfile != null) {
+                conversations = conversationService.getConversationsByClient(clientProfile, status, pageable);
+            } else {
+                ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+                if (professionalProfile != null) {
+                    conversations = conversationService.getConversationsByProfessional(professionalProfile, status, pageable);
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "User profile not found"));
+                }
+            }
 
             return ResponseEntity.ok(conversations);
         } catch (Exception e) {
@@ -87,8 +110,14 @@ public class ConversationController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Authentication required"));
             }
 
+            // Get client profile - only clients can create conversations
+            ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+            if (clientProfile == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Only clients can create conversations"));
+            }
+
             ConversationDto conversation = conversationService.createOrGetConversation(
-                currentUser, professionalId, bookingId);
+                clientProfile, professionalId, bookingId);
             
             return ResponseEntity.ok(Map.of(
                 "message", MessagingConstants.SUCCESS_CONVERSATION_CREATED,
@@ -158,7 +187,21 @@ public class ConversationController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Authentication required"));
             }
 
-            Map<String, Object> stats = conversationService.getConversationStatistics(currentUser);
+            Map<String, Object> stats;
+            
+            // Check if user is client or professional and get appropriate stats
+            ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+            if (clientProfile != null) {
+                stats = conversationService.getConversationStatistics(clientProfile);
+            } else {
+                ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+                if (professionalProfile != null) {
+                    stats = conversationService.getConversationStatistics(professionalProfile);
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "User profile not found"));
+                }
+            }
+            
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -15,8 +15,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.marketplace.dto.ConversationDto;
 import com.marketplace.dto.MessageDto;
+import com.marketplace.model.ClientProfile;
+import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
+import com.marketplace.service.ClientProfileService;
 import com.marketplace.service.ConversationService;
+import com.marketplace.service.ProfessionalService;
 import com.marketplace.util.MessagingConstants;
 
 @Controller
@@ -25,6 +29,12 @@ public class MessagingWebController {
 
     @Autowired
     private ConversationService conversationService;
+    
+    @Autowired
+    private ClientProfileService clientProfileService;
+    
+    @Autowired
+    private ProfessionalService professionalProfileService;
 
     // View all conversations page
     @GetMapping
@@ -38,8 +48,21 @@ public class MessagingWebController {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<ConversationDto> conversations = conversationService.getConversationsByUser(
-            currentUser, "active", pageable);
+        Page<ConversationDto> conversations;
+        
+        // Determine if user is client or professional
+        ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+        if (clientProfile != null) {
+            conversations = conversationService.getConversationsByClient(clientProfile, "active", pageable);
+        } else {
+            ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+            if (professionalProfile != null) {
+                conversations = conversationService.getConversationsByProfessional(professionalProfile, "active", pageable);
+            } else {
+                model.addAttribute("error", "User profile not found");
+                return "error";
+            }
+        }
         
         model.addAttribute("conversations", conversations);
         model.addAttribute("currentPage", page);
@@ -89,8 +112,21 @@ public class MessagingWebController {
             return "redirect:/login";
         }
 
-        // Load professionals that user can message
-        List<ConversationDto> recentConversations = conversationService.getRecentConversations(currentUser);
+        // Load recent conversations based on user type
+        List<ConversationDto> recentConversations;
+        ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+        if (clientProfile != null) {
+            recentConversations = conversationService.getRecentConversations(clientProfile);
+        } else {
+            ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+            if (professionalProfile != null) {
+                recentConversations = conversationService.getRecentConversations(professionalProfile);
+            } else {
+                model.addAttribute("error", "User profile not found");
+                return "error";
+            }
+        }
+        
         model.addAttribute("recentConversations", recentConversations);
         model.addAttribute("quickReplies", MessagingConstants.QUICK_REPLIES);
         
@@ -105,9 +141,15 @@ public class MessagingWebController {
             return "redirect:/login";
         }
 
+        ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+        if (clientProfile == null) {
+            model.addAttribute("error", "Client profile not found");
+            return "error";
+        }
+
         Pageable pageable = PageRequest.of(0, 20);
-        Page<ConversationDto> conversations = conversationService.getConversationsByUser(
-            currentUser, "active", pageable);
+        Page<ConversationDto> conversations = conversationService.getConversationsByClient(
+            clientProfile, "active", pageable);
         
         model.addAttribute("conversations", conversations.getContent());
         model.addAttribute("userType", "client");
@@ -124,9 +166,15 @@ public class MessagingWebController {
             return "redirect:/login";
         }
 
+        ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+        if (professionalProfile == null) {
+            model.addAttribute("error", "Professional profile not found");
+            return "error";
+        }
+
         Pageable pageable = PageRequest.of(0, 20);
-        Page<ConversationDto> conversations = conversationService.getConversationsByUser(
-            currentUser, "active", pageable);
+        Page<ConversationDto> conversations = conversationService.getConversationsByProfessional(
+            professionalProfile, "active", pageable);
         
         model.addAttribute("conversations", conversations.getContent());
         model.addAttribute("userType", "professional");

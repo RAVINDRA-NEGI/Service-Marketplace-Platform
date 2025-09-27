@@ -37,7 +37,7 @@ public class Conversation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
     @ToString.Exclude
-    private User client;
+    private ClientProfile client;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professional_id", nullable = false)
@@ -83,13 +83,13 @@ public class Conversation {
     }
 
     // Constructor for creating conversation without booking
-    public Conversation(User client, ProfessionalProfile professional) {
-        this.client = client;
+    public Conversation(ClientProfile client2, ProfessionalProfile professional) {
+        this.client = client2;
         this.professional = professional;
     }
 
     // Constructor for creating conversation with booking
-    public Conversation(User client, ProfessionalProfile professional, Booking booking) {
+    public Conversation(ClientProfile client, ProfessionalProfile professional, Booking booking) {
         this(client, professional);
         this.booking = booking;
     }

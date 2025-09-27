@@ -21,4 +21,5 @@ public interface ClientProfileService {
     boolean isProfileComplete(ClientProfile profile);
     
     ClientProfile getProfileById(Long id);
+	ClientProfile findByUser(User currentUser);
 }

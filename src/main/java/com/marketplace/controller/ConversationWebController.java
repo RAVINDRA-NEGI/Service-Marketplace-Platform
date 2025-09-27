@@ -13,8 +13,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.marketplace.dto.ConversationDto;
 import com.marketplace.dto.SendMessageDto;
+import com.marketplace.model.ClientProfile;
 import com.marketplace.model.Conversation;
 import com.marketplace.model.User;
+import com.marketplace.service.ClientProfileService;
 import com.marketplace.service.ConversationService;
 import com.marketplace.util.MessagingConstants;
 
@@ -26,6 +28,9 @@ public class ConversationWebController {
 
     @Autowired
     private ConversationService conversationService;
+    
+    @Autowired
+    private ClientProfileService clientProfileService;
 
     // Send message via form submission (for Thymeleaf)
     @PostMapping("/{conversationId}/send")
@@ -77,8 +82,15 @@ public class ConversationWebController {
         }
 
         try {
+            // Get client profile - only clients can create conversations
+            ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+            if (clientProfile == null) {
+                redirectAttributes.addFlashAttribute("error", "Only clients can create conversations");
+                return "redirect:/messaging";
+            }
+
             ConversationDto conversation = conversationService.createOrGetConversation(
-                currentUser, professionalId, bookingId);
+                clientProfile, professionalId, bookingId);
             
             redirectAttributes.addFlashAttribute("message", MessagingConstants.SUCCESS_CONVERSATION_CREATED);
             return "redirect:/messaging/conversation/" + conversation.getId();

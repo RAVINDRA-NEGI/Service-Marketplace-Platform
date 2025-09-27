@@ -80,4 +80,6 @@ public interface ProfessionalService {
             contentType.equals("image/png")
         );
     }
+
+	ProfessionalProfile findByUser(User currentUser);
 }

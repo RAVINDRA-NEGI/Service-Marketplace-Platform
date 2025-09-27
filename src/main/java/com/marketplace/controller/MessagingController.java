@@ -18,10 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.marketplace.dto.MessageDto;
 import com.marketplace.dto.SendMessageDto;
+import com.marketplace.model.ClientProfile;
 import com.marketplace.model.Conversation;
 import com.marketplace.model.Message;
+import com.marketplace.model.ProfessionalProfile;
 import com.marketplace.model.User;
+import com.marketplace.service.ClientProfileService;
 import com.marketplace.service.ConversationService;
+import com.marketplace.service.ProfessionalService;
 import com.marketplace.service.impl.WebSocketMessageService;
 import com.marketplace.util.MessagingConstants;
 
@@ -33,6 +37,12 @@ public class MessagingController {
 
     @Autowired
     private ConversationService conversationService;
+    
+    @Autowired
+    private ClientProfileService clientProfileService;
+    
+    @Autowired
+    private ProfessionalService professionalProfileService;
 
     @Autowired
     private WebSocketMessageService webSocketMessageService;
@@ -140,7 +150,21 @@ public class MessagingController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Authentication required"));
             }
 
-            Map<String, Object> unreadCounts = conversationService.getUnreadCountsForUser(currentUser);
+            Map<String, Object> unreadCounts;
+            
+            // Check if user is client or professional
+            ClientProfile clientProfile = clientProfileService.findByUser(currentUser);
+            if (clientProfile != null) {
+                unreadCounts = conversationService.getUnreadCountsForClient(clientProfile);
+            } else {
+                ProfessionalProfile professionalProfile = professionalProfileService.findByUser(currentUser);
+                if (professionalProfile != null) {
+                    unreadCounts = conversationService.getUnreadCountsForProfessional(professionalProfile);
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "User profile not found"));
+                }
+            }
+            
             return ResponseEntity.ok(unreadCounts);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

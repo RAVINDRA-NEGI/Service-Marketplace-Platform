@@ -16,19 +16,19 @@ import com.marketplace.model.User;
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
     
     // Find conversation by client and professional
-    Optional<Conversation> findByClientAndProfessional(User client, ProfessionalProfile professional);
+    Optional<Conversation> findByClientAndProfessional(User user, ProfessionalProfile professional);
     
     // Find conversations for a client
-    List<Conversation> findByClientOrderByLastMessageSentAtDesc(User client);
+    List<Conversation> findByClientOrderByLastMessageSentAtDesc(User user);
     
     // Find conversations for a professional
-    List<Conversation> findByProfessionalUserOrderByLastMessageSentAtDesc(User professional);
+    List<Conversation> findByProfessionalUserOrderByLastMessageSentAtDesc(User user);
     
     // Find active conversations for a client
-    List<Conversation> findByClientAndIsActiveTrueOrderByLastMessageSentAtDesc(User client);
+    List<Conversation> findByClientAndIsActiveTrueOrderByLastMessageSentAtDesc(User user);
     
     // Find active conversations for a professional
-    List<Conversation> findByProfessionalUserAndIsActiveTrueOrderByLastMessageSentAtDesc(User professional);
+    List<Conversation> findByProfessionalUserAndIsActiveTrueOrderByLastMessageSentAtDesc(User user);
     
     // Find conversations with unread messages for client
     @Query("SELECT c FROM Conversation c WHERE c.client = :user AND c.unreadCountClient > 0")
