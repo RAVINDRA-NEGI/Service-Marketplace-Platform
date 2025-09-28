@@ -14,17 +14,19 @@ import lombok.NoArgsConstructor;
 public class ConversationDto {
 
     private Long id;
-    private Long clientId;
+    private Long clientId;  // Client's user ID
     private String clientName;
     private String clientAvatarUrl;
-    private Long professionalId;
+    private Long clientProfileId;  // ClientProfile entity ID
+    private Long professionalId;  // Professional's user ID
     private String professionalName;
     private String professionalAvatarUrl;
+    private Long professionalProfileId;  // ProfessionalProfile entity ID
     private Long bookingId;
     private String lastMessageContent;
     private MessageType lastMessageType;
     private LocalDateTime lastMessageSentAt;
-    private Integer unreadCount;
+    private Integer unreadCount;  // Unread count for the current user
     private Boolean isActive;
     private Boolean isClosed;
     private LocalDateTime createdAt;

@@ -24,7 +24,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     // Find messages by conversation with pagination
     Page<Message> findByConversationOrderByCreatedAtAsc(Conversation conversation, Pageable pageable);
     
-    // Find messages by conversation and sender
+    // Find messages by conversation and sender user
     List<Message> findByConversationAndSenderOrderByCreatedAtAsc(Conversation conversation, User sender);
     
     // Find recent messages for a conversation
@@ -39,29 +39,28 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationAndMessageStatusOrderByCreatedAtAsc(
         Conversation conversation, MessageStatus status);
     
-    // Find messages by sender
+    // Find messages sent by a user
     List<Message> findBySenderOrderByCreatedAtDesc(User sender);
     
-    // Find unread messages for a conversation
-    @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.sender != :user AND m.messageStatus != :status")
-    List<Message> findUnreadMessages(@Param("conversation") Conversation conversation, 
-                                   @Param("user") User user, 
-                                   @Param("status") MessageStatus status);
+    // Find unread messages for a user in a conversation
+    @Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.sender != :user AND m.messageStatus != 'READ'")
+    List<Message> findUnreadMessagesForUser(@Param("conversation") Conversation conversation, 
+                                          @Param("user") User user);
     
-    // Mark messages as delivered
+    // Mark messages as delivered for a user in a conversation
     @Query("UPDATE Message m SET m.messageStatus = 'DELIVERED', m.deliveredAt = CURRENT_TIMESTAMP WHERE m.conversation = :conversation AND m.sender != :user AND m.messageStatus = 'SENT'")
-    void markMessagesAsDelivered(@Param("conversation") Conversation conversation, @Param("user") User user);
+    void markMessagesAsDeliveredForUser(@Param("conversation") Conversation conversation, @Param("user") User user);
     
-    // Mark messages as read
+    // Mark messages as read for a user in a conversation
     @Query("UPDATE Message m SET m.messageStatus = 'READ', m.readAt = CURRENT_TIMESTAMP WHERE m.conversation = :conversation AND m.sender != :user AND m.messageStatus != 'READ'")
-    void markMessagesAsRead(@Param("conversation") Conversation conversation, @Param("user") User user);
+    void markMessagesAsReadForUser(@Param("conversation") Conversation conversation, @Param("user") User user);
     
     // Count messages for a conversation
     long countByConversation(Conversation conversation);
     
-    // Count unread messages for a conversation
+    // Count unread messages for a user in a conversation
     @Query("SELECT COUNT(m) FROM Message m WHERE m.conversation = :conversation AND m.sender != :user AND m.messageStatus != 'READ'")
-    long countUnreadMessages(@Param("conversation") Conversation conversation, @Param("user") User user);
+    long countUnreadMessagesForUser(@Param("conversation") Conversation conversation, @Param("user") User user);
     
     // Find last message for a conversation
     @Query("SELECT m FROM Message m WHERE m.conversation = :conversation ORDER BY m.createdAt DESC LIMIT 1")

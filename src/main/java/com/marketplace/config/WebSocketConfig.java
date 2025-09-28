@@ -6,7 +6,6 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 import com.marketplace.interceptor.WebSocketUserInterceptor;
 
@@ -14,36 +13,36 @@ import com.marketplace.interceptor.WebSocketUserInterceptor;
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final WebSocketSecurityConfig securityConfig;
+    private final WebSocketUserInterceptor userInterceptor;
+
+    public WebSocketConfig(WebSocketSecurityConfig securityConfig, WebSocketUserInterceptor userInterceptor) {
+        this.securityConfig = securityConfig;
+        this.userInterceptor = userInterceptor;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Configure the message broker
+        // Configure message broker
         config.enableSimpleBroker("/topic", "/queue");
+        
+        // Set application destination prefixes
         config.setApplicationDestinationPrefixes("/app");
+        
+        // Set user destination prefix for private messages
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register STOMP endpoints
+        // Register STOMP endpoints with session-based authentication
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // In production, use specific origins
-                .withSockJS(); // Fallback for browsers that don't support WebSocket
-        
-        // Additional endpoint for secured connections
-        registry.addEndpoint("/ws/secured")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
-    }
-
-    @Override
-    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
-        registry.setMessageSizeLimit(128 * 1024); // 128KB
-        registry.setSendTimeLimit(10 * 10000); // 10 seconds
-        registry.setSendBufferSizeLimit(512 * 1024); // 512KB
+                .setAllowedOriginPatterns("*")  // In production, specify exact origins
+                .withSockJS();  // Fallback for older browsers
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new WebSocketUserInterceptor());
+        registration.interceptors(userInterceptor, securityConfig.securityInterceptor());
     }
 }
