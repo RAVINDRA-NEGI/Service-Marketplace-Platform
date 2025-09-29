@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,49 +17,162 @@ import com.marketplace.model.User;
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
     
-    // Find conversation by client profile and professional profile (for creating new conversations)
+    /**
+     * Find conversation between a specific client and professional.
+     * Used to check if conversation already exists before creating a new one.
+     */
     Optional<Conversation> findByClientAndProfessional(ClientProfile client, ProfessionalProfile professional);
     
-    // Find conversations for a logged-in client user
-    @Query("SELECT c FROM Conversation c WHERE c.client.user = :user ORDER BY c.lastMessageSentAt DESC")
-    List<Conversation> findConversationsForClient(@Param("user") User user);
+    /**
+     * Find all conversations for a client user with optimized fetching.
+     * Uses JOIN FETCH to avoid N+1 query problems.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE cp = :clientProfile " +
+           "ORDER BY c.lastMessageSentAt DESC")
+    List<Conversation> findByClientOrderByLastMessageSentAtDesc(@Param("clientProfile") ClientProfile clientProfile);
     
-    // Find conversations for a logged-in professional user
-    List<Conversation> findByProfessionalUserOrderByLastMessageSentAtDesc(User professional);
+    /**
+     * Find all conversations for a professional user with optimized fetching.
+     * Uses JOIN FETCH to avoid N+1 query problems.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE pp.user = :professionalUser " +
+           "ORDER BY c.lastMessageSentAt DESC")
+    List<Conversation> findByProfessionalUserOrderByLastMessageSentAtDesc(@Param("professionalUser") User professionalUser);
     
-    // Find active conversations for a logged-in client user
-    @Query("SELECT c FROM Conversation c WHERE c.client.user = :user AND c.isActive = true ORDER BY c.lastMessageSentAt DESC")
-    List<Conversation> findActiveConversationsForClient(@Param("user") User user);
+    /**
+     * Find active conversations for a client user.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE cp = :clientProfile " +
+           "AND c.isActive = true " +
+           "ORDER BY c.lastMessageSentAt DESC")
+    List<Conversation> findActiveByClientOrderByLastMessageSentAtDesc(@Param("clientProfile") ClientProfile clientProfile);
     
-    // Find active conversations for a logged-in professional user
-    List<Conversation> findByProfessionalUserAndIsActiveTrueOrderByLastMessageSentAtDesc(User professional);
+    /**
+     * Find active conversations for a professional user.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE pp.user = :professionalUser " +
+           "AND c.isActive = true " +
+           "ORDER BY c.lastMessageSentAt DESC")
+    List<Conversation> findActiveByProfessionalUserOrderByLastMessageSentAtDesc(@Param("professionalUser") User professionalUser);
     
-    // Find conversations with unread messages for a logged-in client user
-    @Query("SELECT c FROM Conversation c WHERE c.client.user = :user AND c.unreadCountClient > 0")
+    /**
+     * Find conversations with unread messages for a client user.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE cp.user = :user " +
+           "AND c.unreadCountClient > 0 " +
+           "ORDER BY c.lastMessageSentAt DESC")
     List<Conversation> findConversationsWithUnreadForClient(@Param("user") User user);
     
-    // Find conversations with unread messages for a logged-in professional user
-    @Query("SELECT c FROM Conversation c WHERE c.professional.user = :user AND c.unreadCountProfessional > 0")
+    /**
+     * Find conversations with unread messages for a professional user.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE pp.user = :user " +
+           "AND c.unreadCountProfessional > 0 " +
+           "ORDER BY c.lastMessageSentAt DESC")
     List<Conversation> findConversationsWithUnreadForProfessional(@Param("user") User user);
     
-    // Find conversation by booking
-    Optional<Conversation> findByBookingId(Long bookingId);
+    /**
+     * Find conversation by booking ID.
+     */
+    @Query("SELECT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user " +
+           "WHERE c.booking.id = :bookingId")
+    Optional<Conversation> findByBookingId(@Param("bookingId") Long bookingId);
     
-    // Count unread messages for a logged-in user in a conversation
-    @Query("SELECT CASE WHEN c.client.user.id = :user.id THEN c.unreadCountProfessional ELSE c.unreadCountClient END FROM Conversation c WHERE c.id = :conversationId")
-    Integer countUnreadForUser(@Param("conversationId") Long conversationId, @Param("user") User user);
+    /**
+     * Get unread count for a specific user in a conversation.
+     * Returns the appropriate unread count based on user role.
+     */
+    @Query("SELECT CASE " +
+           "WHEN c.client.user.id = :userId THEN c.unreadCountClient " +
+           "ELSE c.unreadCountProfessional " +
+           "END " +
+           "FROM Conversation c " +
+           "WHERE c.id = :conversationId")
+    Integer countUnreadForUser(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
     
-    // Update unread count for client user
-    @Query("UPDATE Conversation c SET c.unreadCountClient = 0 WHERE c.id = :conversationId AND c.client.user = :user")
-    void resetUnreadCountForClientUser(@Param("conversationId") Long conversationId, @Param("user") User user);
+    /**
+     * Reset unread count for client in a specific conversation.
+     */
+    @Modifying
+    @Query("UPDATE Conversation c " +
+           "SET c.unreadCountClient = 0 " +
+           "WHERE c.id = :conversationId " +
+           "AND c.client.user.id = :userId")
+    void resetUnreadCountForClient(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
     
-    // Update unread count for professional user
-    @Query("UPDATE Conversation c SET c.unreadCountProfessional = 0 WHERE c.id = :conversationId AND c.professional.user = :user")
-    void resetUnreadCountForProfessionalUser(@Param("conversationId") Long conversationId, @Param("user") User user);
+    /**
+     * Reset unread count for professional in a specific conversation.
+     */
+    @Modifying
+    @Query("UPDATE Conversation c " +
+           "SET c.unreadCountProfessional = 0 " +
+           "WHERE c.id = :conversationId " +
+           "AND c.professional.user.id = :userId")
+    void resetUnreadCountForProfessional(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
     
-    // Find conversations by client profile (when we have the profile, not user)
-    List<Conversation> findByClientOrderByLastMessageSentAtDesc(ClientProfile client);
+    /**
+     * Find all conversations for a user (works for both client and professional).
+     * Useful for a unified inbox view.
+     */
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN FETCH c.client cp " +
+           "JOIN FETCH cp.user cu " +
+           "JOIN FETCH c.professional pp " +
+           "JOIN FETCH pp.user pu " +
+           "WHERE cu.id = :userId OR pu.id = :userId " +
+           "ORDER BY c.lastMessageSentAt DESC")
+    List<Conversation> findAllByUserId(@Param("userId") Long userId);
     
-    // Find conversations by professional profile (when we have the profile, not user)
-    List<Conversation> findByProfessionalOrderByLastMessageSentAtDesc(ProfessionalProfile professional);
+    /**
+     * Count total unread messages for a user across all conversations.
+     */
+    @Query("SELECT COALESCE(SUM(CASE " +
+           "WHEN c.client.user.id = :userId THEN c.unreadCountClient " +
+           "WHEN c.professional.user.id = :userId THEN c.unreadCountProfessional " +
+           "ELSE 0 END), 0) " +
+           "FROM Conversation c " +
+           "WHERE c.client.user.id = :userId OR c.professional.user.id = :userId")
+    Long countTotalUnreadForUser(@Param("userId") Long userId);
+    
+    /**
+     * Check if user has access to a conversation.
+     */
+    @Query("SELECT COUNT(c) > 0 FROM Conversation c " +
+           "WHERE c.id = :conversationId " +
+           "AND (c.client.user.id = :userId OR c.professional.user.id = :userId)")
+    boolean userHasAccessToConversation(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 }

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.marketplace.dto.UserRegistrationDto;
+import com.marketplace.enums.Role;
 import com.marketplace.exception.UserAlreadyExistsException;
 import com.marketplace.exception.UsernameTakenException;
-import com.marketplace.model.Role;
 import com.marketplace.model.User;
 import com.marketplace.repository.UserRepository;
 import com.marketplace.service.UserService;

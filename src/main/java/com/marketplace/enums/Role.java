@@ -1,4 +1,4 @@
-package com.marketplace.model;
+package com.marketplace.enums;
 
 public enum Role {
 		CLIENT,
