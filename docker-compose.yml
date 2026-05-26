@@ -5,36 +5,25 @@ services:
     image: mysql:8.4
     container_name: marketplace-mysql
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: service_marketplace_platform
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
 
   app:
     build: .
     container_name: service-marketplace-app
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
-    env_file:
-      - .env
+      - db
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
-      APP_UPLOAD_DIR: ${APP_UPLOAD_DIR}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/service_marketplace_platform
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpass
+      APP_UPLOAD_DIR: /app/uploads/
     ports:
       - "8080:8080"
     volumes:
