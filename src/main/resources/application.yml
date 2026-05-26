@@ -2,33 +2,33 @@ spring:
   application:
     name: Service-Marketplace-Platform
   datasource:
-    url: jdbc:mysql://localhost:3306/service_marketplace_platform
-    username: root
-    password: chutiya22
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/service_marketplace_platform}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:rootpass}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
   jpa:
     hibernate:
-     ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
-       dialect: org.hibernate.dialect.MySQL8Dialect 
+        dialect: org.hibernate.dialect.MySQL8Dialect
   transaction:
     default-timeout: 30
   servlet:
     multipart:
-      max-request-size:
-        5MB
-      max-file-size:
-        5MB
+      max-request-size: 5MB
+      max-file-size: 5MB
+
 app:
   upload:
-    dir: uploads/
+    dir: ${APP_UPLOAD_DIR:uploads/}
+
 logging:
   level:
-   com:
-     marketplace:
-       service: INFO
-       controller: INFO
+    com:
+      marketplace:
+        service: INFO
+        controller: INFO

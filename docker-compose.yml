@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: marketplace-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: service_marketplace_platform
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: service-marketplace-app
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/service_marketplace_platform
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpass
+      APP_UPLOAD_DIR: /app/uploads/
+    ports:
+      - "8080:8080"
+    volumes:
+      - app_uploads:/app/uploads
+
+volumes:
+  mysql_data:
+  app_uploads:
