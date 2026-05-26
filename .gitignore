@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Runtime secrets / local deploy config
+.env
+.env.*
+!.env.example
+
+# Runtime generated uploads
+uploads/**
+!uploads/.gitkeep
